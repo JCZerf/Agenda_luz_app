@@ -2,16 +2,10 @@ class Cliente {
   int? id;
   String nome;
   String telefone;
-  String observacoes;
-  String historico;
+  String? observacoes;
+  String? historico;
 
-  Cliente({
-    this.id,
-    required this.nome,
-    required this.telefone,
-    required this.observacoes,
-    required this.historico,
-  });
+  Cliente({this.id, required this.nome, required this.telefone, this.observacoes, this.historico});
 
   Map<String, dynamic> toMap() {
     return {

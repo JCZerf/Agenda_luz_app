@@ -1,38 +1,76 @@
+# 📒 AgendALuz
+
+Aplicativo desenvolvido para auxiliar profissionais autônomos, com foco em **designers de sobrancelhas**, a **gerenciar seus agendamentos, finanças e clientes** de forma simples, organizada e totalmente **offline**.
+
+---
+
+## 🚩 Visão Geral
+
+O app **AgendALuz** foi criado para atender às necessidades reais de uma profissional da beleza (Amanda), permitindo:
+
+- Agendar atendimentos com e sem cliente cadastrada
+- Acompanhar o status de cada atendimento (pago, pendente, concluído)
+- Registrar receitas e despesas
+- Visualizar o desempenho mensal
+- Ter controle completo do histórico de clientes e movimentações
 
 ---
 
 ## 🔧 Funcionalidades Implementadas
 
-### ✅ Cadastro de Clientes
-- Campos: nome, telefone, observações, frequência de retorno, próximo atendimento
-- Histórico de atendimentos e reusabilidade da cliente
+### ✅ Clientes
+- Cadastro de clientes com:
+  - Nome
+  - Telefone
+  - Observações
+- Visualização detalhada com último atendimento
+- Edição e exclusão com confirmação
+- Suporte a agendamentos sem cliente cadastrado
 
-### ✅ Agendamento de Atendimentos
-- Agendamento com ou sem cliente vinculado
-- Campos: data/hora, valor, status de pagamento, observações
-- Edição e exclusão
-- Dismissible para deletar com alerta
+### ✅ Agendamentos
+- Criação de agendamento com ou sem cliente
+- Campos:
+  - Data e hora
+  - Valor
+  - Status de pagamento
+  - Status de conclusão (concluído ou pendente)
+  - Observações
+- Conclusão manual ou automática após a data
+- Edição e exclusão com modal de confirmação
+- Swipe (`Dismissible`) para deletar direto da lista
 
-### ✅ Visualização da Agenda
-- Visões: diária, semanal, mensal
-- Filtros de exibição dinâmicos
-- Destaque para o dia atual
-- Ícones de status de pagamento (check verde para pago)
+### ✅ Agenda (Visualização)
+- Modos de exibição: **Diário**, **Semanal**, **Mensal**
+- Exibição baseada em **data de referência personalizada**
+- Botão “Voltar para Hoje” para retornar ao dia atual
+- Destaques visuais:
+  - Ícones de status (verde para pago, laranja para pendente)
+  - Nome da cliente (mesmo sem cadastro)
+  - Cores suaves para foco visual
 
-### ✅ Lista de Clientes
-- Exibição em `ListView` com design delicado
-- Modal de ações rápidas: visualizar, editar, excluir
-- Modal de confirmação de exclusão
+### ✅ Atendimentos Realizados
+- Lista apenas de atendimentos concluídos
+- Exibição com nome da cliente e data/hora
+- Possibilidade de reverter para “pendente”
+- Contador total de atendimentos realizados
 
-### ✅ Controle de Navegação
-- Rotas nomeadas organizadas em `main.dart`
-- Navegação com argumentos entre telas (modo de edição, atendimento, cliente etc.)
+### ✅ Controle Financeiro
+- Tela separada com lista de movimentações
+- Receitas e despesas lançadas manualmente
+- Receita automática com base em atendimentos pagos
+- Distinção clara entre origem **manual** e **automática**
+- Exibição do valor total do mês
+- Comparativo com mês anterior (crescimento ou queda)
+
+### ✅ Tipos de Serviço (em planejamento)
+- Cadastro de serviços com valor padrão
+- Reutilização no momento do agendamento
 
 ---
 
-## 💾 Estrutura de Banco de Dados (SQLite)
+## 💾 Estrutura do Banco de Dados (SQLite)
 
-### 📌 Cliente
+### 📌 Tabela: `clientes`
 | Campo                | Tipo     |
 |----------------------|----------|
 | id                   | INTEGER  |
@@ -42,49 +80,62 @@
 | frequencia_retorno   | INTEGER  |
 | proximo_atendimento  | TEXT     |
 
-### 📌 Atendimento
+### 📌 Tabela: `atendimentos`
 | Campo       | Tipo     |
 |-------------|----------|
 | id          | INTEGER  |
 | cliente_id  | INTEGER (nullable) |
 | data_hora   | TEXT     |
 | valor       | REAL     |
-| pago        | INTEGER  |
+| pago        | INTEGER (0 ou 1) |
+| concluido   | INTEGER (0 ou 1) |
 | observacoes | TEXT     |
 
-### 📌 Despesa
+### 📌 Tabela: `movimentacoes_financeiras`
 | Campo     | Tipo   |
 |-----------|--------|
 | id        | INTEGER |
 | descricao | TEXT    |
 | valor     | REAL    |
 | data      | TEXT    |
+| tipo      | TEXT    | ('receita' ou 'despesa')
+| origem    | TEXT    | ('manual' ou 'automatica')
 
 ---
 
 ## 🎨 Estilo e Design
 
 - Paleta de cores:
-  - Rosa principal: `#D9A7B0`
-  - Rosa claro: `#FFF1F3`
-  - Texto escuro: `#8A4B57`
-- Estilo visual feminino e delicado, alinhado ao público-alvo
-- Componentes com bordas arredondadas (`Radius.circular(16 ou 20)`)
-- Botão flutuante com ícone de coração (`Icons.favorite`)
+  - 🎀 Rosa principal: `#D9A7B0`
+  - 🌸 Rosa claro: `#FFF1F3`
+  - 🌺 Rosa escuro (texto): `#8A4B57`
+- Visual feminino e delicado, alinhado ao perfil da cliente
+- Bordas arredondadas (`Radius.circular(16 ou 20)`)
+- Ícones com toque emocional (ex: `Icons.favorite`)
+- Tipografia com legibilidade e bom contraste
+- `BottomNavigationBar` com 4 abas: Agenda, Atendimentos, Clientes e Financeiro
 
 ---
 
-## 📌 Recursos Técnicos Adicionais
+## 🧠 Arquitetura Técnica
 
-- Utilização de `setState` para reatividade nas telas
-- Uso de `Navigator.pushNamed` com argumentos tipados (modo de operação, dados de edição)
-- Modularização por responsabilidade (cada função em seu arquivo)
+- **Flutter com SQLite offline**
+- Modularização:
+  - `models/` para entidades
+  - `database/` com `DatabaseHelper`
+  - `pages/` para cada tela principal
+- Navegação com `Navigator.pushNamed` e argumentos
+- Estado local com `setState` e lógica bem encapsulada
+- Separação visual e lógica em widgets reutilizáveis
+- Modal Bottom Sheets para ações contextuais
+- Exibição de data e hora com `intl` (`DateFormat`)
+- Compatível com Android e iOS (não requer login)
 
 ---
 
-## 🚀 Como Executar
+## 🛠️ Versão
 
-1. Clone o projeto:
-   ```bash
-   git clone https://github.com/seu-usuario/agendaluz.git
-   cd agendaluz
+```txt
+Versão: 1.2.0+4
+Status: MVP Finalizado
+Publicação: Uso interno da cliente Amanda (offline)

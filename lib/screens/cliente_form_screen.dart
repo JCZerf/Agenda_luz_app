@@ -15,7 +15,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
   final nomeController = TextEditingController();
   final telefoneController = TextEditingController();
   final observacoesController = TextEditingController();
-  final historicoController = TextEditingController();
 
   Cliente? clienteEdicao;
 
@@ -26,9 +25,8 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
     if (args != null && args['cliente'] is Cliente) {
       clienteEdicao = args['cliente'] as Cliente;
       nomeController.text = clienteEdicao!.nome;
-      telefoneController.text = clienteEdicao!.telefone ?? '';
+      telefoneController.text = clienteEdicao!.telefone;
       observacoesController.text = clienteEdicao!.observacoes ?? '';
-      historicoController.text = clienteEdicao!.historico ?? '';
     }
   }
 
@@ -37,7 +35,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
     nomeController.dispose();
     telefoneController.dispose();
     observacoesController.dispose();
-    historicoController.dispose();
     super.dispose();
   }
 
@@ -48,7 +45,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
         nome: nomeController.text.trim(),
         telefone: telefoneController.text.trim(),
         observacoes: observacoesController.text.trim(),
-        historico: historicoController.text.trim(),
+        historico: clienteEdicao?.historico, // histórico continua intacto, mas não é editável
       );
 
       if (clienteEdicao != null) {
@@ -101,7 +98,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
               _buildCampo(label: 'Nome', controller: nomeController),
               _buildCampo(label: 'Telefone', controller: telefoneController),
               _buildCampo(label: 'Observações', controller: observacoesController, maxLines: 3),
-              _buildCampo(label: 'Histórico', controller: historicoController, maxLines: 3),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _salvarCliente,

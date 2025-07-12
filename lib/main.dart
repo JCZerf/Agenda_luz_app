@@ -1,9 +1,10 @@
-import 'package:agendaluz/screens/cliente_form_screen.dart';
+import 'package:AgendaLuz/screens/cliente_form_screen.dart';
+import 'package:AgendaLuz/screens/movimentacao_form_screen.dart';
+import 'package:AgendaLuz/screens/movimentacoes_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'screens/agendamento_form_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const AgendALuzApp());
@@ -51,16 +52,14 @@ class AgendALuzApp extends StatelessWidget {
           hintStyle: const TextStyle(color: Colors.grey),
           prefixIconColor: const Color(0xFFD9A7B0),
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
+        elevatedButtonTheme: const ElevatedButtonThemeData(
           style: ButtonStyle(
-            backgroundColor: const WidgetStatePropertyAll(Color(0xFFD9A7B0)),
-            foregroundColor: const WidgetStatePropertyAll(Colors.white),
+            backgroundColor: WidgetStatePropertyAll(Color(0xFFD9A7B0)),
+            foregroundColor: WidgetStatePropertyAll(Colors.white),
             shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
             ),
-            textStyle: const WidgetStatePropertyAll(
-              TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+            textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -69,12 +68,13 @@ class AgendALuzApp extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Color(0xFFD9A7B0)),
       ),
-      initialRoute: '/',
+      initialRoute: '/home',
       routes: {
-        '/': (context) => const SplashScreen(),
         '/home': (context) => const HomeScreen(),
         '/agendamento': (context) => const AgendamentoFormScreen(),
         '/cliente_form': (context) => const ClienteFormScreen(),
+        '/movimentacoes': (context) => const MovimentacoesScreen(),
+        '/nova_movimentacao': (context) => const MovimentacaoFormScreen(),
       },
     );
   }

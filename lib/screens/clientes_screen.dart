@@ -1,6 +1,7 @@
-import 'package:agendaluz/database/database_helper.dart';
-import 'package:agendaluz/models/cliente.dart';
+import 'package:AgendaLuz/database/database_helper.dart';
+import 'package:AgendaLuz/models/cliente.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class ClientesScreen extends StatefulWidget {
   const ClientesScreen({super.key});
@@ -13,7 +14,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
   List<Cliente> _clientes = [];
 
   final rosa = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
+  final rosaClaro = const Color.fromARGB(255, 255, 255, 255);
   final rosaTexto = const Color(0xFF8A4B57);
 
   @override
@@ -27,6 +28,19 @@ class _ClientesScreenState extends State<ClientesScreen> {
     setState(() {
       _clientes = lista;
     });
+  }
+
+  String _formatarHistorico(String? historicoIso) {
+    if (historicoIso == null || historicoIso.trim().isEmpty) {
+      return 'Sem histórico de atendimento';
+    }
+
+    try {
+      final data = DateTime.parse(historicoIso);
+      return DateFormat('dd/MM/yyyy – HH:mm').format(data);
+    } catch (_) {
+      return 'Data inválida';
+    }
   }
 
   void _mostrarOpcoes(Cliente cliente) {
@@ -88,23 +102,116 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
-  void _mostrarDetalhes(Cliente cliente) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(cliente.nome),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Telefone: ${cliente.telefone}'),
-            if (cliente.observacoes.isNotEmpty ?? false)
-              Text('Observações: ${cliente.observacoes}'),
-            if (cliente.historico.isNotEmpty ?? false) Text('Histórico: ${cliente.historico}'),
-          ],
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Fechar'))],
+  Widget _linhaDetalhe(IconData icone, String titulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icone, color: const Color(0xFFD9A7B0)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '$titulo: $valor',
+              style: const TextStyle(fontSize: 16, color: Color(0xFF8A4B57)),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  void _mostrarDetalhes(Cliente cliente) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: rosaClaro,
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Text(
+                  'Detalhes da Cliente',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: rosaTexto),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _linhaDetalhe(Icons.person, 'Nome', cliente.nome),
+              _linhaDetalhe(Icons.phone, 'Telefone', cliente.telefone),
+              if ((cliente.observacoes?.trim().isNotEmpty ?? false))
+                _linhaDetalhe(Icons.notes, 'Observações', cliente.observacoes!),
+              _linhaDetalhe(
+                Icons.calendar_today,
+                'Último atendimento',
+                _formatarHistorico(cliente.historico),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Editar'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(
+                          context,
+                          '/cliente_form',
+                          arguments: {'modo': 'editar', 'cliente': cliente},
+                        ).then((_) => _carregarClientes());
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      label: const Text('Excluir', style: TextStyle(color: Colors.red)),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        final confirmado = await showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Excluir Cliente'),
+                            content: Text('Deseja realmente excluir ${cliente.nome}?'),
+                            actions: [
+                              TextButton(
+                                child: const Text('Cancelar'),
+                                onPressed: () => Navigator.pop(context, false),
+                              ),
+                              ElevatedButton(
+                                child: const Text('Excluir'),
+                                onPressed: () => Navigator.pop(context, true),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmado == true) {
+                          await DatabaseHelper().deletarCliente(cliente.id!);
+                          _carregarClientes();
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  child: const Text('Fechar'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

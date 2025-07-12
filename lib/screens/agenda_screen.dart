@@ -1,5 +1,5 @@
-import 'package:agendaluz/database/database_helper.dart';
-import 'package:agendaluz/models/atendimento.dart';
+import 'package:AgendaLuz/database/database_helper.dart';
+import 'package:AgendaLuz/models/atendimento.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -12,12 +12,15 @@ class AgendaScreen extends StatefulWidget {
 
 class _AgendaScreenState extends State<AgendaScreen> {
   int _abaSelecionada = 0;
+  DateTime _dataSelecionada = DateTime.now();
+
   final List<String> opcoes = ['Diário', 'Semanal', 'Mensal'];
   List<Map<String, dynamic>> _todos = [];
 
   @override
   void initState() {
     super.initState();
+    DatabaseHelper().marcarAtendimentosConcluidosAutomaticamente();
     carregarAgendamentos();
   }
 
@@ -29,7 +32,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   List<Map<String, dynamic>> _filtrar() {
-    final agora = DateTime.now();
+    final agora = _dataSelecionada;
     if (_abaSelecionada == 0) {
       return _todos.where((a) {
         final data = DateTime.parse(a['data_hora']);
@@ -51,30 +54,147 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
+  bool _mesmoDia(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   void _mostrarDetalhes(BuildContext context, Map<String, dynamic> a) {
     final data = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(a['data_hora']));
     final valor = (a['valor'] as num).toDouble();
-    final nome = a['nome_cliente'] ?? 'Cliente não cadastrada';
+    final nome = a['nome_livre'] ?? 'Cliente';
     final pago = a['pago'] == 1;
+    final concluido = a['concluido'] == 1;
+    final observacoes = a['observacoes'] ?? '';
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Detalhes do Agendamento'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Cliente: $nome'),
-            Text('Data/Hora: $data'),
-            Text('Valor: R\$ ${valor.toStringAsFixed(2)}'),
-            Text('Pago: ${pago ? 'Sim' : 'Não'}'),
-            if (a['observacoes'] != null && a['observacoes'].toString().isNotEmpty)
-              Text('Obs: ${a['observacoes']}'),
-          ],
-        ),
-        actions: [TextButton(child: const Text('Fechar'), onPressed: () => Navigator.pop(context))],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Text(
+                  'Detalhes do Atendimento',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.pink[900],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.person, color: Colors.pink),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Cliente: $nome')),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, color: Colors.pink),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Data/Hora: $data')),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.attach_money, color: Colors.pink),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Valor: R\$ ${valor.toStringAsFixed(2)}')),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    pago ? Icons.check_circle : Icons.cancel,
+                    color: pago ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Pago: ${pago ? 'Sim' : 'Não'}')),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    concluido ? Icons.done : Icons.pending,
+                    color: concluido ? Colors.green : Colors.orange,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Status: ${concluido ? 'Concluído' : 'Pendente'}')),
+                ],
+              ),
+              if (observacoes.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.notes, color: Colors.pink),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text('Obs: $observacoes')),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Editar'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(
+                          context,
+                          '/agendamento',
+                          arguments: {
+                            'modo': a['cliente_id'] == null ? 'semCliente' : 'comCliente',
+                            'atendimento': Atendimento.fromMap(a),
+                          },
+                        ).then((_) => carregarAgendamentos());
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (!concluido)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('Concluir'),
+                        onPressed: () async {
+                          final atendimento = Atendimento.fromMap(a)..concluido = true;
+                          await DatabaseHelper().atualizarAtendimento(atendimento);
+                          Navigator.pop(context);
+                          carregarAgendamentos();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Atendimento marcado como concluído')),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  child: const Text('Fechar'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -92,6 +212,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
               _mostrarDetalhes(context, agendamento);
             },
           ),
+          if (agendamento['concluido'] == 0)
+            ListTile(
+              leading: const Icon(Icons.check_circle_outline),
+              title: const Text('Marcar como concluído'),
+              onTap: () async {
+                Navigator.pop(context);
+                final atendimento = Atendimento.fromMap(agendamento);
+                atendimento.concluido = true;
+
+                await DatabaseHelper().atualizarAtendimento(atendimento);
+                carregarAgendamentos();
+
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Atendimento marcado como concluído')));
+              },
+            ),
           ListTile(
             leading: const Icon(Icons.edit),
             title: const Text('Editar'),
@@ -100,7 +237,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
               Navigator.pushNamed(
                 context,
                 '/agendamento',
-                arguments: {'modo': 'editar', 'dados': agendamento},
+                arguments: {
+                  'modo': agendamento['cliente_id'] == null ? 'semCliente' : 'comCliente',
+                  'atendimento': Atendimento.fromMap(agendamento),
+                },
               ).then((_) => carregarAgendamentos());
             },
           ),
@@ -195,41 +335,82 @@ class _AgendaScreenState extends State<AgendaScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text(
-          'AMANDA LUZ',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          'Agenda - ${DateFormat('dd/MM/yyyy').format(_dataSelecionada)}',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: () async {
+              final selecionada = await showDatePicker(
+                context: context,
+                initialDate: _dataSelecionada,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
+              );
+              if (selecionada != null) {
+                setState(() {
+                  _dataSelecionada = selecionada;
+                });
+              }
+            },
+          ),
+        ],
       ),
+
       body: Column(
         children: [
-          Container(
-            color: rosaClaro,
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(opcoes.length, (index) {
-                final selecionado = _abaSelecionada == index;
-                return GestureDetector(
-                  onTap: () => setState(() => _abaSelecionada = index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: selecionado ? rosaPrincipal : Colors.transparent,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: rosaPrincipal),
-                    ),
-                    child: Text(
-                      opcoes[index],
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: selecionado ? Colors.white : rosaTexto,
+          Column(
+            children: [
+              Container(
+                color: rosaClaro,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(opcoes.length, (index) {
+                    final selecionado = _abaSelecionada == index;
+                    return GestureDetector(
+                      onTap: () => setState(() => _abaSelecionada = index),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: selecionado ? rosaPrincipal : Colors.transparent,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: rosaPrincipal),
+                        ),
+                        child: Text(
+                          opcoes[index],
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: selecionado ? Colors.white : rosaTexto,
+                          ),
+                        ),
                       ),
+                    );
+                  }),
+                ),
+              ),
+              if (!_mesmoDia(_dataSelecionada, DateTime.now()))
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 4),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _dataSelecionada = DateTime.now();
+                        _abaSelecionada = 0;
+                      });
+                    },
+                    icon: const Icon(Icons.today, color: rosaTexto),
+                    label: const Text(
+                      'Voltar para Hoje',
+                      style: TextStyle(color: rosaTexto, fontWeight: FontWeight.w600),
                     ),
                   ),
-                );
-              }),
-            ),
+                ),
+            ],
           ),
+
           Expanded(
             child: Container(
               color: rosaClaro,
@@ -239,7 +420,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       children: _filtrar().map((a) {
                         final data = DateTime.parse(a['data_hora']);
                         final formatada = DateFormat('dd/MM/yyyy HH:mm').format(data);
-                        final nome = a['nome_cliente'] ?? 'Sem cadastro';
+                        final nome = a['nome_cliente'] ?? a['nome_livre'] ?? 'Sem cadastro';
                         final valor = (a['valor'] as num).toDouble();
 
                         return Dismissible(
@@ -309,19 +490,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                               trailing: a['pago'] == 1
                                   ? const Icon(Icons.check_circle, color: Colors.green)
                                   : null,
-                              onTap: () async {
-                                final sucesso = await Navigator.pushNamed(
-                                  context,
-                                  '/agendamento',
-                                  arguments: {
-                                    'modo': a['cliente_id'] == null ? 'semCliente' : 'comCliente',
-                                    'atendimento': Atendimento.fromMap(a),
-                                  },
-                                );
-                                if (sucesso == true) {
-                                  carregarAgendamentos();
-                                }
-                              },
+                              onTap: () => _mostrarOpcoes(context, a),
                             ),
                           ),
                         );

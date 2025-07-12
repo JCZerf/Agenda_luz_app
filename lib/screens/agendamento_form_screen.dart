@@ -1,6 +1,6 @@
-import 'package:agendaluz/database/database_helper.dart';
-import 'package:agendaluz/models/atendimento.dart';
-import 'package:agendaluz/models/cliente.dart';
+import 'package:AgendaLuz/database/database_helper.dart';
+import 'package:AgendaLuz/models/atendimento.dart';
+import 'package:AgendaLuz/models/cliente.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -10,6 +10,8 @@ class AgendamentoFormScreen extends StatefulWidget {
   @override
   State<AgendamentoFormScreen> createState() => _AgendamentoFormScreenState();
 }
+
+bool _dadosIniciaisCarregados = false;
 
 class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   final _formKey = GlobalKey<FormState>();
@@ -34,6 +36,9 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    if (_dadosIniciaisCarregados) return; // <-- evita sobrescrever os dados após edição
+
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
     if (args != null) {
       modo = args['modo'] ?? 'comCliente';
@@ -42,7 +47,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         final a = agendamentoEdicao!;
 
         clienteSelecionadoId = a.clienteId;
-        nomeLivreController.text = a.nomeLivre ?? '';
+        nomeLivreController.text = a.nomeLivre;
         valorController.text = a.valor.toStringAsFixed(2);
         observacoesController.text = a.observacoes ?? '';
         dataSelecionada = a.dataHora;
@@ -52,6 +57,8 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         if (a.clienteId == null) modo = 'semCliente';
       }
     }
+
+    _dadosIniciaisCarregados = true; // <-- importante
     carregarClientes();
   }
 
@@ -64,10 +71,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
     final data = await showDatePicker(
       context: context,
       initialDate: dataSelecionada ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
-    if (data != null) setState(() => dataSelecionada = data);
+    if (data != null) {
+      setState(() {
+        dataSelecionada = data;
+      });
+    }
   }
 
   Future<void> _selecionarHora() async {
@@ -75,7 +86,19 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       context: context,
       initialTime: horaSelecionada ?? TimeOfDay.now(),
     );
-    if (hora != null) setState(() => horaSelecionada = hora);
+    if (hora != null) {
+      setState(() {
+        horaSelecionada = hora;
+      });
+    }
+  }
+
+  String _buscarNomeClienteSelecionado(int? id) {
+    final cliente = clientes.firstWhere(
+      (c) => c.id == id,
+      orElse: () => Cliente(nome: 'Cliente', telefone: ''),
+    );
+    return cliente.nome;
   }
 
   void _salvar() async {
@@ -91,23 +114,37 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       final novo = Atendimento(
         id: agendamentoEdicao?.id,
         clienteId: modo == 'comCliente' ? clienteSelecionadoId : null,
-        nomeLivre: modo == 'semCliente' ? nomeLivreController.text.trim() : null,
+        nomeLivre: modo == 'semCliente'
+            ? nomeLivreController.text.trim()
+            : _buscarNomeClienteSelecionado(clienteSelecionadoId),
         dataHora: dataHora,
         valor: double.tryParse(valorController.text) ?? 0.0,
         pago: pago,
         observacoes: observacoesController.text.trim(),
+        concluido: agendamentoEdicao?.concluido ?? false,
       );
 
+      final helper = DatabaseHelper();
+
       if (agendamentoEdicao != null) {
-        await DatabaseHelper().atualizarAtendimento(novo);
+        await helper.atualizarAtendimento(novo);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Agendamento atualizado com sucesso!')));
       } else {
-        await DatabaseHelper().inserirAtendimento(novo);
+        final id = await helper.inserirAtendimento(novo);
+        novo.id = id;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Agendamento salvo com sucesso!')));
+      }
+
+      // Lançar no financeiro se pago == true e ainda não houver movimentação automática
+      if (pago && novo.id != null) {
+        final jaExiste = await helper.movimentacaoExisteParaAtendimento(novo.id!);
+        if (!jaExiste) {
+          await helper.inserirMovimentacaoAutomatica(novo);
+        }
       }
 
       Navigator.pop(context, true);
@@ -148,13 +185,6 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dataFormatada = dataSelecionada != null
-        ? DateFormat('dd/MM/yyyy').format(dataSelecionada!)
-        : 'Selecionar data';
-    final horaFormatada = horaSelecionada != null
-        ? horaSelecionada!.format(context)
-        : 'Selecionar hora';
-
     return Scaffold(
       appBar: AppBar(
         title: Text(agendamentoEdicao != null ? 'Editar Agendamento' : 'Novo Agendamento'),
@@ -192,7 +222,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.date_range),
-                      label: Text(dataFormatada),
+                      label: Text(
+                        dataSelecionada != null
+                            ? DateFormat('dd/MM/yyyy').format(dataSelecionada!)
+                            : 'Selecionar data',
+                      ),
                       onPressed: _selecionarData,
                     ),
                   ),
@@ -200,12 +234,17 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.access_time),
-                      label: Text(horaFormatada),
+                      label: Text(
+                        horaSelecionada != null
+                            ? horaSelecionada!.format(context)
+                            : 'Selecionar hora',
+                      ),
                       onPressed: _selecionarHora,
                     ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 16),
               _buildCampoTexto(
                 label: 'Valor',
@@ -264,6 +303,22 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                   prefixIcon: Icon(Icons.notes),
                 ),
               ),
+              if (agendamentoEdicao != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.event_available, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Text(
+                        agendamentoEdicao!.concluido
+                            ? 'Atendimento concluído'
+                            : 'Atendimento pendente',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _salvar,
@@ -275,5 +330,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _dadosIniciaisCarregados = false;
+    super.dispose();
   }
 }
