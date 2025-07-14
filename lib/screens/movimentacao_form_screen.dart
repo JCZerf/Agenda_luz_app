@@ -14,12 +14,33 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descricaoController = TextEditingController();
   final _valorController = TextEditingController();
+
   DateTime _data = DateTime.now();
   bool _isReceita = true;
+  bool _modoEdicao = false;
+  int? _idMovimentacao;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null && args['modo'] == 'editar' && args['movimentacao'] != null && !_modoEdicao) {
+      final MovimentacaoFinanceira m = args['movimentacao'];
+
+      _descricaoController.text = m.descricao;
+      _valorController.text = m.valor.toStringAsFixed(2);
+      _data = m.data;
+      _isReceita = m.tipo == 'receita';
+      _idMovimentacao = m.id;
+      _modoEdicao = true;
+    }
+  }
 
   Future<void> _salvarMovimentacao() async {
     if (_formKey.currentState!.validate()) {
-      final novaMov = MovimentacaoFinanceira(
+      final movimentacao = MovimentacaoFinanceira(
+        id: _idMovimentacao,
         valor: double.parse(_valorController.text),
         descricao: _descricaoController.text,
         data: _data,
@@ -27,15 +48,20 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
         origem: 'manual',
       );
 
-      await DatabaseHelper().inserirMovimentacao(novaMov);
-      Navigator.pop(context);
+      if (_modoEdicao) {
+        await DatabaseHelper().atualizarMovimentacao(movimentacao);
+      } else {
+        await DatabaseHelper().inserirMovimentacao(movimentacao);
+      }
+
+      Navigator.pop(context, true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nova Movimentação')),
+      appBar: AppBar(title: Text(_modoEdicao ? 'Editar Movimentação' : 'Nova Movimentação')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -90,7 +116,10 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                 },
               ),
               const SizedBox(height: 24),
-              ElevatedButton(onPressed: _salvarMovimentacao, child: const Text('Salvar')),
+              ElevatedButton(
+                onPressed: _salvarMovimentacao,
+                child: Text(_modoEdicao ? 'Atualizar' : 'Salvar'),
+              ),
             ],
           ),
         ),

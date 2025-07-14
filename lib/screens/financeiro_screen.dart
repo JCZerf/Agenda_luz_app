@@ -1,9 +1,7 @@
 import 'package:AgendaLuz/database/database_helper.dart';
-import 'package:AgendaLuz/screens/movimentacoes_screen.dart';
+import 'package:AgendaLuz/models/movimentacao_financeira.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-import '../models/movimentacao_financeira.dart';
 
 class FinanceiroScreen extends StatefulWidget {
   const FinanceiroScreen({super.key});
@@ -14,7 +12,7 @@ class FinanceiroScreen extends StatefulWidget {
 
 class _FinanceiroScreenState extends State<FinanceiroScreen> {
   List<MovimentacaoFinanceira> _movimentacoes = [];
-  String _periodoSelecionado = 'mensal';
+  DateTime _mesAtual = DateTime(DateTime.now().year, DateTime.now().month);
 
   @override
   void initState() {
@@ -29,117 +27,168 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
     });
   }
 
-  List<MovimentacaoFinanceira> _filtrarPorPeriodo(List<MovimentacaoFinanceira> lista) {
-    final agora = DateTime.now();
-    Duration limite;
+  List<MovimentacaoFinanceira> _filtrarPorMes(List<MovimentacaoFinanceira> lista) {
+    return lista
+        .where((m) => m.data.year == _mesAtual.year && m.data.month == _mesAtual.month)
+        .toList();
+  }
 
-    switch (_periodoSelecionado) {
-      case 'semanal':
-        limite = const Duration(days: 7);
-        break;
-      case 'trimestral':
-        limite = const Duration(days: 90);
-        break;
-      case 'mensal':
-      default:
-        limite = const Duration(days: 30);
-        break;
+  Future<bool?> _confirmarExclusao(MovimentacaoFinanceira m) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir movimentação'),
+        content: const Text('Deseja realmente excluir esta movimentação?'),
+        actions: [
+          TextButton(child: const Text('Cancelar'), onPressed: () => Navigator.pop(context, false)),
+          ElevatedButton(
+            child: const Text('Excluir'),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await DatabaseHelper().deletarMovimentacao(m.id!);
+      await _carregarMovimentacoes();
+      return true;
     }
 
-    return lista.where((m) => agora.difference(m.data).inDays <= limite.inDays).toList();
+    return false;
+  }
+
+  void _mudarMes(int delta) {
+    setState(() {
+      _mesAtual = DateTime(_mesAtual.year, _mesAtual.month + delta);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    const rosa = Color(0xFFD9A7B0);
-    const rosaClaro = Color(0xFFFFF1F3);
+    final listaFiltrada = _filtrarPorMes(_movimentacoes);
     const rosaTexto = Color(0xFF8A4B57);
 
-    final listaFiltrada = _filtrarPorPeriodo(_movimentacoes);
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Financeiro')),
-      body: Container(
-        color: rosaClaro,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Column(
-          children: [
-            _ResumoFinanceiroCard(movimentacoes: listaFiltrada),
-            const SizedBox(height: 24),
-            _PeriodoFiltro(
-              valorAtual: _periodoSelecionado,
-              onChange: (valor) {
-                setState(() {
-                  _periodoSelecionado = valor;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: listaFiltrada.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'Nenhuma movimentação encontrada.',
-                        style: TextStyle(color: rosaTexto, fontSize: 16),
-                      ),
-                    )
-                  : ListView.separated(
-                      itemCount: listaFiltrada.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final m = listaFiltrada[index];
-                        final cor = m.isReceita ? Colors.green[700]! : Colors.red[700]!;
-                        final data = DateFormat('dd/MM/yyyy').format(m.data);
-                        final origem = '${m.origem[0].toUpperCase()}${m.origem.substring(1)}';
+      appBar: AppBar(
+        title: const Text(
+          'Financeiro',
+          style: TextStyle(
+            color: Color(0xFF8A4B57), // rosaTexto
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
 
-                        return Card(
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 2,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            leading: Icon(
-                              m.isReceita ? Icons.arrow_upward : Icons.arrow_downward,
-                              color: cor,
-                            ),
-                            title: Text(
-                              m.descricao,
-                              style: const TextStyle(
-                                color: rosaTexto,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '$data • $origem',
-                              style: const TextStyle(color: rosaTexto),
-                            ),
-                            trailing: Text(
-                              'R\$ ${m.valor.toStringAsFixed(2)}',
-                              style: TextStyle(color: cor, fontWeight: FontWeight.w600),
+        centerTitle: true,
+
+        elevation: 0,
+        backgroundColor: const Color(0xFFFBEFF1),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left, color: Color(0xFF8A4B57)),
+                  onPressed: () => _mudarMes(-1),
+                ),
+                Text(
+                  toBeginningOfSentenceCase(
+                    DateFormat('MMMM \'de\' y', 'pt_BR').format(_mesAtual),
+                  )!,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF8A4B57),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right, color: Color(0xFF8A4B57)),
+                  onPressed: () => _mudarMes(1),
+                ),
+              ],
+            ),
+          ),
+
+          _ResumoFinanceiroCard(movimentacoes: listaFiltrada),
+          const SizedBox(height: 16),
+          Expanded(
+            child: listaFiltrada.isEmpty
+                ? const Center(child: Text('Nenhuma movimentação encontrada.'))
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: listaFiltrada.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final m = listaFiltrada[index];
+                      final cor = m.isReceita ? Colors.green[700]! : Colors.red[700]!;
+                      final data = DateFormat('dd/MM/yyyy').format(m.data);
+
+                      final card = Card(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 2,
+                        child: ListTile(
+                          onTap: m.origem == 'manual'
+                              ? () async {
+                                  final resultado = await Navigator.pushNamed(
+                                    context,
+                                    '/nova_movimentacao',
+                                    arguments: {'modo': 'editar', 'movimentacao': m},
+                                  );
+                                  if (resultado == true) await _carregarMovimentacoes();
+                                }
+                              : null,
+                          title: Text(
+                            m.descricao,
+                            style: const TextStyle(
+                              color: rosaTexto,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
+                          subtitle: Text(
+                            '$data • ${m.origem}',
+                            style: const TextStyle(color: rosaTexto),
+                          ),
+                          trailing: Text(
+                            '${m.isReceita ? '+' : '-'}R\$ ${m.valor.toStringAsFixed(2)}',
+                            style: TextStyle(color: cor, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      );
+
+                      if (m.origem == 'manual') {
+                        return Dismissible(
+                          key: ValueKey(m.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            padding: const EdgeInsets.only(right: 20),
+                            alignment: Alignment.centerRight,
+                            color: Colors.red,
+                            child: const Icon(Icons.delete, color: Colors.white),
+                          ),
+                          confirmDismiss: (_) => _confirmarExclusao(m),
+                          child: card,
                         );
-                      },
-                    ),
-            ),
-          ],
-        ),
+                      } else {
+                        return card;
+                      }
+                    },
+                  ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final resultado = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MovimentacoesScreen()),
-          );
-          if (resultado == true) {
-            _carregarMovimentacoes();
-          }
+          final resultado = await Navigator.pushNamed(context, '/nova_movimentacao');
+          if (resultado == true) await _carregarMovimentacoes();
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.attach_money),
       ),
     );
   }
@@ -152,12 +201,8 @@ class _ResumoFinanceiroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final receitaTotal = movimentacoes
-        .where((m) => m.isReceita)
-        .fold(0.0, (soma, m) => soma + m.valor);
-    final despesaTotal = movimentacoes
-        .where((m) => !m.isReceita)
-        .fold(0.0, (soma, m) => soma + m.valor);
+    final receitaTotal = movimentacoes.where((m) => m.isReceita).fold(0.0, (s, m) => s + m.valor);
+    final despesaTotal = movimentacoes.where((m) => !m.isReceita).fold(0.0, (s, m) => s + m.valor);
     final saldo = receitaTotal - despesaTotal;
 
     const rosaTexto = Color(0xFF8A4B57);
@@ -166,6 +211,7 @@ class _ResumoFinanceiroCard extends StatelessWidget {
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         child: Column(
@@ -211,42 +257,6 @@ class _ResumoItem extends StatelessWidget {
           Text('R\$ ${valor.toStringAsFixed(2)}', style: estilo),
         ],
       ),
-    );
-  }
-}
-
-class _PeriodoFiltro extends StatelessWidget {
-  final String valorAtual;
-  final Function(String) onChange;
-
-  const _PeriodoFiltro({required this.valorAtual, required this.onChange});
-
-  @override
-  Widget build(BuildContext context) {
-    const rosaPrincipal = Color(0xFFD9A7B0);
-
-    return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        labelText: 'Período',
-        filled: true,
-        fillColor: const Color(0xFFFFF1F3),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-      value: valorAtual,
-      dropdownColor: Colors.white,
-      iconEnabledColor: rosaPrincipal,
-      items: const [
-        DropdownMenuItem(value: 'semanal', child: Text('Semanal')),
-        DropdownMenuItem(value: 'mensal', child: Text('Mensal')),
-        DropdownMenuItem(value: 'trimestral', child: Text('Trimestral')),
-      ],
-      onChanged: (value) {
-        if (value != null) onChange(value);
-      },
     );
   }
 }

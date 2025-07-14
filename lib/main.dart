@@ -1,14 +1,21 @@
 import 'package:AgendaLuz/screens/cliente_form_screen.dart';
 import 'package:AgendaLuz/screens/movimentacao_form_screen.dart';
-import 'package:AgendaLuz/screens/movimentacoes_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/agendamento_form_screen.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await initializeDateFormatting('pt_BR', null);
+  await Future.delayed(const Duration(seconds: 2));
+
   runApp(const AgendALuzApp());
 }
+
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 class AgendALuzApp extends StatelessWidget {
   const AgendALuzApp({super.key});
@@ -73,7 +80,6 @@ class AgendALuzApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/agendamento': (context) => const AgendamentoFormScreen(),
         '/cliente_form': (context) => const ClienteFormScreen(),
-        '/movimentacoes': (context) => const MovimentacoesScreen(),
         '/nova_movimentacao': (context) => const MovimentacaoFormScreen(),
       },
     );

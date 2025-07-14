@@ -159,6 +159,16 @@ class DatabaseHelper {
       whereArgs: [a.id],
     );
 
+    // Se o atendimento estava marcado como pago e agora não está mais, remova a movimentação financeira
+    if (eraPago && !a.pago) {
+      await dbClient.delete(
+        'movimentacoes_financeiras',
+        where: 'atendimento_id = ?',
+        whereArgs: [a.id],
+      );
+    }
+
+    // Se o pagamento foi marcado, cria uma movimentação financeira (caso ainda não exista)
     if (!eraPago && a.pago == true) {
       final jaExiste = await movimentacaoExisteParaAtendimento(a.id!);
       if (!jaExiste) {
