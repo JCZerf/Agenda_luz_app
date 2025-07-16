@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "agendaluz" "\0"
+            VALUE "FileDescription", "AgendaLuz" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "agendaluz" "\0"
+            VALUE "InternalName", "AgendaLuz" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "agendaluz.exe" "\0"
-            VALUE "ProductName", "agendaluz" "\0"
+            VALUE "OriginalFilename", "AgendaLuz.exe" "\0"
+            VALUE "ProductName", "AgendaLuz" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -7,6 +7,8 @@ class Atendimento {
   bool pago;
   bool concluido;
   String? observacoes;
+  int? servicoId;
+  int? tempoEstimadoMinutos;
 
   Atendimento({
     this.id,
@@ -17,6 +19,8 @@ class Atendimento {
     this.pago = false,
     this.concluido = false,
     this.observacoes,
+    this.servicoId,
+    this.tempoEstimadoMinutos,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +33,8 @@ class Atendimento {
       'pago': pago ? 1 : 0,
       'concluido': concluido ? 1 : 0,
       'observacoes': observacoes,
+      'servico_id': servicoId,
+      'tempo_estimado_minutos': tempoEstimadoMinutos,
     };
   }
 
@@ -42,6 +48,8 @@ class Atendimento {
       pago: map['pago'] == 1,
       concluido: map['concluido'] == 1,
       observacoes: map['observacoes'],
+      servicoId: map['servico_id'],
+      tempoEstimadoMinutos: map['tempo_estimado_minutos'],
     );
   }
 
@@ -54,6 +62,8 @@ class Atendimento {
     bool? pago,
     bool? concluido,
     String? observacoes,
+    int? servicoId,
+    int? tempoEstimadoMinutos,
   }) {
     return Atendimento(
       id: id ?? this.id,
@@ -64,6 +74,15 @@ class Atendimento {
       pago: pago ?? this.pago,
       concluido: concluido ?? this.concluido,
       observacoes: observacoes ?? this.observacoes,
+      servicoId: servicoId ?? this.servicoId,
+      tempoEstimadoMinutos: tempoEstimadoMinutos ?? this.tempoEstimadoMinutos,
     );
+  }
+
+  // Verifica se este atendimento deve ser marcado como concluído automaticamente
+  bool get deveSerConcluido {
+    final agora = DateTime.now();
+    final duasHorasDepois = dataHora.add(const Duration(hours: 2));
+    return agora.isAfter(duasHorasDepois);
   }
 }

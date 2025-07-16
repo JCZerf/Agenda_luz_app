@@ -1,7 +1,8 @@
-import 'package:AgendaLuz/database/database_helper.dart';
-import 'package:AgendaLuz/models/movimentacao_financeira.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import '../database/database_helper.dart';
+import '../models/movimentacao_financeira.dart';
 
 class FinanceiroScreen extends StatefulWidget {
   const FinanceiroScreen({super.key});
@@ -13,17 +14,26 @@ class FinanceiroScreen extends StatefulWidget {
 class _FinanceiroScreenState extends State<FinanceiroScreen> {
   List<MovimentacaoFinanceira> _movimentacoes = [];
   DateTime _mesAtual = DateTime(DateTime.now().year, DateTime.now().month);
+  double _previsaoReceita = 0.0;
 
   @override
   void initState() {
     super.initState();
     _carregarMovimentacoes();
+    _carregarPrevisaoReceita();
   }
 
   Future<void> _carregarMovimentacoes() async {
     final dados = await DatabaseHelper().listarMovimentacoes();
     setState(() {
       _movimentacoes = dados;
+    });
+  }
+
+  Future<void> _carregarPrevisaoReceita() async {
+    final previsao = await DatabaseHelper().calcularPrevisaoReceita(mes: _mesAtual);
+    setState(() {
+      _previsaoReceita = previsao;
     });
   }
 
@@ -52,6 +62,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
     if (confirmar == true) {
       await DatabaseHelper().deletarMovimentacao(m.id!);
       await _carregarMovimentacoes();
+      await _carregarPrevisaoReceita();
       return true;
     }
 
@@ -62,6 +73,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
     setState(() {
       _mesAtual = DateTime(_mesAtual.year, _mesAtual.month + delta);
     });
+    _carregarPrevisaoReceita();
   }
 
   @override
@@ -71,19 +83,14 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: rosaTexto,
         title: const Text(
           'Financeiro',
-          style: TextStyle(
-            color: Color(0xFF8A4B57), // rosaTexto
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
         ),
-
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
-
         elevation: 0,
-        backgroundColor: const Color(0xFFFBEFF1),
       ),
       body: Column(
         children: [
@@ -93,7 +100,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left, color: Color(0xFF8A4B57)),
+                  icon: const Icon(Icons.chevron_left, color: rosaTexto),
                   onPressed: () => _mudarMes(-1),
                 ),
                 Text(
@@ -103,18 +110,17 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF8A4B57),
+                    color: rosaTexto,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right, color: Color(0xFF8A4B57)),
+                  icon: const Icon(Icons.chevron_right, color: rosaTexto),
                   onPressed: () => _mudarMes(1),
                 ),
               ],
             ),
           ),
-
-          _ResumoFinanceiroCard(movimentacoes: listaFiltrada),
+          _ResumoFinanceiroCard(movimentacoes: listaFiltrada, previsaoReceita: _previsaoReceita),
           const SizedBox(height: 16),
           Expanded(
             child: listaFiltrada.isEmpty
@@ -140,7 +146,10 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                                     '/nova_movimentacao',
                                     arguments: {'modo': 'editar', 'movimentacao': m},
                                   );
-                                  if (resultado == true) await _carregarMovimentacoes();
+                                  if (resultado == true) {
+                                    await _carregarMovimentacoes();
+                                    await _carregarPrevisaoReceita();
+                                  }
                                 }
                               : null,
                           title: Text(
@@ -186,9 +195,13 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final resultado = await Navigator.pushNamed(context, '/nova_movimentacao');
-          if (resultado == true) await _carregarMovimentacoes();
+          if (resultado == true) {
+            await _carregarMovimentacoes();
+            await _carregarPrevisaoReceita();
+          }
         },
-        child: const Icon(Icons.attach_money),
+        backgroundColor: rosaTexto,
+        child: const Icon(Icons.attach_money, color: Colors.white),
       ),
     );
   }
@@ -196,8 +209,9 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
 
 class _ResumoFinanceiroCard extends StatelessWidget {
   final List<MovimentacaoFinanceira> movimentacoes;
+  final double previsaoReceita;
 
-  const _ResumoFinanceiroCard({required this.movimentacoes});
+  const _ResumoFinanceiroCard({required this.movimentacoes, required this.previsaoReceita});
 
   @override
   Widget build(BuildContext context) {
@@ -220,6 +234,16 @@ class _ResumoFinanceiroCard extends StatelessWidget {
             _ResumoItem(label: 'Despesas', valor: despesaTotal, cor: Colors.red[700]!),
             const Divider(),
             _ResumoItem(label: 'Saldo Líquido', valor: saldo, cor: rosaTexto, destaque: true),
+            if (previsaoReceita > 0) ...[
+              const SizedBox(height: 8),
+              _ResumoItem(
+                label: 'Previsão de Receita',
+                valor: previsaoReceita,
+                cor: Colors.blue[700]!,
+                destaque: false,
+                icone: Icons.trending_up,
+              ),
+            ],
           ],
         ),
       ),
@@ -232,12 +256,14 @@ class _ResumoItem extends StatelessWidget {
   final double valor;
   final Color cor;
   final bool destaque;
+  final IconData? icone;
 
   const _ResumoItem({
     required this.label,
     required this.valor,
     required this.cor,
     this.destaque = false,
+    this.icone,
   });
 
   @override
@@ -253,7 +279,12 @@ class _ResumoItem extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Row(
+            children: [
+              if (icone != null) ...[Icon(icone, color: cor, size: 20), const SizedBox(width: 8)],
+              Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+            ],
+          ),
           Text('R\$ ${valor.toStringAsFixed(2)}', style: estilo),
         ],
       ),

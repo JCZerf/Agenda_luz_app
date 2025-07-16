@@ -12,7 +12,11 @@ class AtendimentosScreen extends StatefulWidget {
 }
 
 class _AtendimentosScreenState extends State<AtendimentosScreen> {
-  List<Map<String, dynamic>> _concluidos = [];
+  List<Map<String, dynamic>> _todosAtendimentos = [];
+  List<Map<String, dynamic>> _atendimentosFiltrados = [];
+  DateTime _mesSelecionado = DateTime.now();
+  String _textoBusca = '';
+  final TextEditingController _controladorBusca = TextEditingController();
 
   @override
   void initState() {
@@ -22,10 +26,77 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
 
   Future<void> _carregarAtendimentosConcluidos() async {
     final todos = await DatabaseHelper().listarAtendimentosComNomeCliente();
-    final apenasConcluidos = todos.where((a) => a['concluido'] == 1).toList();
+    final agora = DateTime.now();
+
+    // Filtra atendimentos concluídos ou que deveriam ser concluídos automaticamente
+    // MAS apenas se a data não for no futuro
+    final concluidos = todos.where((a) {
+      final concluido = a['concluido'] == 1;
+      final dataHora = DateTime.parse(a['data_hora']);
+      final duasHorasDepois = dataHora.add(const Duration(hours: 2));
+      final deveSerConcluido = agora.isAfter(duasHorasDepois) && dataHora.isBefore(agora);
+
+      return concluido || deveSerConcluido;
+    }).toList();
+
     setState(() {
-      _concluidos = apenasConcluidos;
+      _todosAtendimentos = concluidos;
+      _filtrarAtendimentos();
     });
+  }
+
+  void _filtrarAtendimentos() {
+    setState(() {
+      _atendimentosFiltrados = _todosAtendimentos.where((atendimento) {
+        // Filtra por mês
+        final dataAtendimento = DateTime.parse(atendimento['data_hora']);
+        final mesAtendimento = DateTime(dataAtendimento.year, dataAtendimento.month);
+        final mesFiltro = DateTime(_mesSelecionado.year, _mesSelecionado.month);
+
+        bool mesCorreto = mesAtendimento == mesFiltro;
+
+        // Filtra por nome se há texto de busca
+        bool nomeCorreto = true;
+        if (_textoBusca.isNotEmpty) {
+          final nome = atendimento['nome_cliente'] ?? atendimento['nome_livre'] ?? 'Sem cadastro';
+          nomeCorreto = nome.toLowerCase().contains(_textoBusca.toLowerCase());
+        }
+
+        return mesCorreto && nomeCorreto;
+      }).toList();
+
+      // Ordena por data (mais recente primeiro)
+      _atendimentosFiltrados.sort(
+        (a, b) => DateTime.parse(b['data_hora']).compareTo(DateTime.parse(a['data_hora'])),
+      );
+    });
+  }
+
+  Future<void> _atualizarAtendimentoNoBanco(Atendimento atendimento) async {
+    try {
+      await DatabaseHelper().atualizarAtendimento(atendimento);
+    } catch (e) {
+      print('Erro ao atualizar atendimento no banco: $e');
+    }
+  }
+
+  void _selecionarMes() async {
+    final DateTime? dataSelecionada = await showDatePicker(
+      context: context,
+      initialDate: _mesSelecionado,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Selecione o mês',
+      fieldLabelText: 'Mês',
+      locale: const Locale('pt', 'BR'),
+    );
+
+    if (dataSelecionada != null) {
+      setState(() {
+        _mesSelecionado = dataSelecionada;
+        _filtrarAtendimentos();
+      });
+    }
   }
 
   void _mostrarOpcoes(Map<String, dynamic> agendamento) {
@@ -49,7 +120,7 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
               Navigator.pop(context);
               final atendimento = Atendimento.fromMap(agendamento);
               atendimento.concluido = false;
-              await DatabaseHelper().atualizarAtendimento(atendimento);
+              await _atualizarAtendimentoNoBanco(atendimento);
               _carregarAtendimentosConcluidos();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Atendimento desmarcado como concluído')),
@@ -195,65 +266,232 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const rosa = Color(0xFFD9A7B0);
+    const rosaPrincipal = Color(0xFFD9A7B0);
     const rosaClaro = Color(0xFFFFF1F3);
     const rosaTexto = Color(0xFF8A4B57);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Atendimentos')),
+      appBar: AppBar(
+        backgroundColor: rosaTexto,
+        elevation: 0,
+        title: const Text('Atendimentos', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            onPressed: _selecionarMes,
+            tooltip: 'Selecionar mês',
+          ),
+        ],
+      ),
       body: Container(
         color: rosaClaro,
-        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Total de atendimentos concluídos: ${_concluidos.length}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: rosaTexto),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _concluidos.isEmpty
-                  ? const Center(child: Text('Nenhum atendimento concluído ainda.'))
-                  : ListView.builder(
-                      itemCount: _concluidos.length,
-                      itemBuilder: (context, index) {
-                        final a = _concluidos[index];
-                        final data = DateFormat(
-                          'dd/MM/yyyy HH:mm',
-                        ).format(DateTime.parse(a['data_hora']));
-                        final nome = a['nome_cliente'] ?? a['nome_livre'] ?? 'Sem cadastro';
-
-                        return GestureDetector(
-                          onTap: () => _mostrarOpcoes(a),
-                          child: Card(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            color: Colors.white,
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              leading: const Icon(Icons.check_circle, color: rosa),
-                              title: Text(
-                                nome,
-                                style: const TextStyle(
-                                  color: rosaTexto,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Data: $data',
-                                style: const TextStyle(color: rosaTexto),
-                              ),
-                              trailing: const Icon(Icons.more_vert, color: rosaTexto),
-                            ),
-                          ),
-                        );
-                      },
+            // Filtros
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+              ),
+              child: Column(
+                children: [
+                  // Seletor de mês
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today, color: rosaTexto),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Mês: ${DateFormat('MMMM yyyy', 'pt_BR').format(_mesSelecionado)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: rosaTexto,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: _selecionarMes,
+                        icon: const Icon(Icons.edit_calendar),
+                        label: const Text('Alterar'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Campo de busca
+                  TextField(
+                    controller: _controladorBusca,
+                    decoration: InputDecoration(
+                      hintText: 'Buscar por nome do cliente...',
+                      prefixIcon: const Icon(Icons.search, color: rosaTexto),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: rosaPrincipal),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: rosaTexto),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      suffixIcon: _textoBusca.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _controladorBusca.clear();
+                                setState(() {
+                                  _textoBusca = '';
+                                  _filtrarAtendimentos();
+                                });
+                              },
+                            )
+                          : null,
                     ),
+                    onChanged: (valor) {
+                      setState(() {
+                        _textoBusca = valor;
+                        _filtrarAtendimentos();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            // Informações do filtro
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: rosaPrincipal.withOpacity(0.1),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: rosaTexto),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_atendimentosFiltrados.length} atendimento(s) concluído(s)',
+                    style: const TextStyle(fontSize: 12, color: rosaTexto),
+                  ),
+                ],
+              ),
+            ),
+            // Lista de atendimentos
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _atendimentosFiltrados.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _textoBusca.isEmpty ? Icons.event_busy : Icons.search_off,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _textoBusca.isEmpty
+                                  ? 'Nenhum atendimento concluído neste mês'
+                                  : 'Nenhum atendimento encontrado para "$_textoBusca"',
+                              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Mês: ${DateFormat('MMMM yyyy', 'pt_BR').format(_mesSelecionado)}',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _atendimentosFiltrados.length,
+                        itemBuilder: (context, index) {
+                          final a = _atendimentosFiltrados[index];
+                          final dataHora = DateTime.parse(a['data_hora']);
+                          final data = DateFormat('dd/MM/yyyy HH:mm').format(dataHora);
+                          final nome = a['nome_cliente'] ?? a['nome_livre'] ?? 'Sem cadastro';
+                          final valor = (a['valor'] as num).toDouble();
+                          final concluido = a['concluido'] == 1;
+
+                          // Verifica se foi concluído automaticamente
+                          final agora = DateTime.now();
+                          final duasHorasDepois = dataHora.add(const Duration(hours: 2));
+                          final deveSerConcluido = agora.isAfter(duasHorasDepois);
+                          final autoConcluido = !concluido && deveSerConcluido;
+
+                          return GestureDetector(
+                            onTap: () => _mostrarOpcoes(a),
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              color: Colors.white,
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.all(16),
+                                leading: Icon(
+                                  autoConcluido ? Icons.schedule : Icons.check_circle,
+                                  color: autoConcluido ? Colors.orange : rosaPrincipal,
+                                ),
+                                title: Text(
+                                  nome,
+                                  style: const TextStyle(
+                                    color: rosaTexto,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Data: $data', style: const TextStyle(color: rosaTexto)),
+                                    Text(
+                                      'Valor: R\$ ${valor.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: Colors.green[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    if (autoConcluido) ...[
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange[50],
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.orange, width: 1),
+                                        ),
+                                        child: Text(
+                                          'AUTO-CONCLUÍDO',
+                                          style: TextStyle(
+                                            color: Colors.orange[700],
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                trailing: const Icon(Icons.more_vert, color: rosaTexto),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controladorBusca.dispose();
+    super.dispose();
   }
 }

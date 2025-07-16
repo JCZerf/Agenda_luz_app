@@ -13,6 +13,7 @@ O app **AgendALuz** foi criado para atender às necessidades reais de uma profis
 - Registrar receitas e despesas
 - Visualizar o desempenho mensal
 - Ter controle completo do histórico de clientes e movimentações
+- Cadastrar tipos de serviços com valores padrão
 
 ---
 
@@ -21,11 +22,12 @@ O app **AgendALuz** foi criado para atender às necessidades reais de uma profis
 ### ✅ Clientes
 - Cadastro de clientes com:
   - Nome
-  - Telefone
+  - Telefone (formatação automática)
   - Observações
 - Visualização detalhada com último atendimento
 - Edição e exclusão com confirmação
 - Suporte a agendamentos sem cliente cadastrado
+- Histórico automático de atendimentos
 
 ### ✅ Agendamentos
 - Criação de agendamento com ou sem cliente
@@ -35,9 +37,12 @@ O app **AgendALuz** foi criado para atender às necessidades reais de uma profis
   - Status de pagamento
   - Status de conclusão (concluído ou pendente)
   - Observações
+  - Tempo estimado (opcional)
+  - Tipo de serviço (opcional)
 - Conclusão manual ou automática após a data
 - Edição e exclusão com modal de confirmação
 - Swipe (`Dismissible`) para deletar direto da lista
+- Proteção contra múltiplos salvamentos
 
 ### ✅ Agenda (Visualização)
 - Modos de exibição: **Diário**, **Semanal**, **Mensal**
@@ -47,12 +52,14 @@ O app **AgendALuz** foi criado para atender às necessidades reais de uma profis
   - Ícones de status (verde para pago, laranja para pendente)
   - Nome da cliente (mesmo sem cadastro)
   - Cores suaves para foco visual
+- Marcação automática de conclusão para atendimentos passados
 
 ### ✅ Atendimentos Realizados
 - Lista apenas de atendimentos concluídos
 - Exibição com nome da cliente e data/hora
 - Possibilidade de reverter para “pendente”
 - Contador total de atendimentos realizados
+- Detalhes completos do atendimento
 
 ### ✅ Controle Financeiro
 - Tela separada com lista de movimentações
@@ -61,10 +68,17 @@ O app **AgendALuz** foi criado para atender às necessidades reais de uma profis
 - Distinção clara entre origem **manual** e **automática**
 - Exibição do valor total do mês
 - Comparativo com mês anterior (crescimento ou queda)
+- Edição e exclusão de movimentações
 
-### ✅ Tipos de Serviço (em planejamento)
-- Cadastro de serviços com valor padrão
-- Reutilização no momento do agendamento
+### ✅ Tipos de Serviço
+- Cadastro de serviços com:
+  - Nome
+  - Valor padrão
+  - Custo (opcional)
+  - Tempo médio em minutos
+- Integração com formulário de agendamento
+- Preenchimento automático de valor e tempo
+- Edição e exclusão com confirmação
 
 ---
 
@@ -113,7 +127,7 @@ O app **AgendALuz** foi criado para atender às necessidades reais de uma profis
 - Bordas arredondadas (`Radius.circular(16 ou 20)`)
 - Ícones com toque emocional (ex: `Icons.favorite`)
 - Tipografia com legibilidade e bom contraste
-- `BottomNavigationBar` com 4 abas: Agenda, Atendimentos, Clientes e Financeiro
+- `BottomNavigationBar` com 5 abas: Agenda, Atendimentos, Clientes, Serviços e Financeiro
 
 ---
 
@@ -123,19 +137,21 @@ O app **AgendALuz** foi criado para atender às necessidades reais de uma profis
 - Modularização:
   - `models/` para entidades
   - `database/` com `DatabaseHelper`
-  - `pages/` para cada tela principal
+  - `screens/` para cada tela principal
 - Navegação com `Navigator.pushNamed` e argumentos
 - Estado local com `setState` e lógica bem encapsulada
 - Separação visual e lógica em widgets reutilizáveis
 - Modal Bottom Sheets para ações contextuais
 - Exibição de data e hora com `intl` (`DateFormat`)
 - Compatível com Android e iOS (não requer login)
+- Sistema de versionamento do banco de dados com migrations
 
 ---
 
 ## 🛠️ Versão
 
 ```txt
-Versão: 1.2.0+4
-Status: MVP Finalizado
+Versão: 1.3.3+8
+Status: MVP Completo e Funcional (Correções para Dispositivos Físicos)
 Publicação: Uso interno da cliente Amanda (offline)
+APK: Disponível em build/app/outputs/flutter-apk/app-release.apk

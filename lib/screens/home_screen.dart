@@ -5,6 +5,7 @@ import 'agenda_screen.dart';
 import 'atendimentos_screen.dart';
 import 'clientes_screen.dart';
 import 'financeiro_screen.dart';
+import 'servicos_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
     AgendaScreen(),
     AtendimentosScreen(),
     ClientesScreen(),
+    ServicosScreen(),
     FinanceiroScreen(),
   ];
 
@@ -31,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Agenda'),
     BottomNavigationBarItem(icon: Icon(Icons.checklist), label: 'Atendimentos'),
     BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clientes'),
+    BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Serviços'),
     BottomNavigationBarItem(icon: Icon(Icons.attach_money), label: 'Financeiro'),
   ];
 
@@ -68,13 +71,14 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
             backgroundColor: Colors.white,
-            selectedItemColor: rosaPrincipal,
+            selectedItemColor: rosaTexto,
             unselectedItemColor: rosaTexto.withOpacity(0.5),
-            selectedFontSize: 14,
-            unselectedFontSize: 12,
+            selectedFontSize: 12,
+            unselectedFontSize: 10,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400),
             type: BottomNavigationBarType.fixed,
+            elevation: 0,
             items: _botoes,
           ),
         ),

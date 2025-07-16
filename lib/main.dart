@@ -1,6 +1,10 @@
 import 'package:AgendaLuz/screens/cliente_form_screen.dart';
 import 'package:AgendaLuz/screens/movimentacao_form_screen.dart';
+import 'package:AgendaLuz/screens/notifications_screen.dart';
+import 'package:AgendaLuz/screens/servico_form_screen.dart';
+import 'package:AgendaLuz/services/notification_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/agendamento_form_screen.dart';
@@ -8,6 +12,14 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa o serviço de notificações com tratamento de erro
+  try {
+    await NotificationService.initialize();
+  } catch (e) {
+    // Se falhar, continua sem notificações
+    print('Erro ao inicializar notificações: $e');
+  }
 
   await initializeDateFormatting('pt_BR', null);
   await Future.delayed(const Duration(seconds: 2));
@@ -25,15 +37,22 @@ class AgendALuzApp extends StatelessWidget {
     return MaterialApp(
       title: 'AgendALuz',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('pt', 'BR'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('pt', 'BR')],
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFFBEFF1), // fundo geral bem claro
-        primaryColor: const Color(0xFFD9A7B0), // rosa principal
+        primaryColor: const Color(0xFF8A4B57), // rosa mais escuro
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: const Color(0xFFD9A7B0),
+          primary: const Color(0xFF8A4B57),
           secondary: const Color(0xFFE9B6C0), // tom médio para destaque
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFD9A7B0),
+          backgroundColor: Color(0xFF8A4B57),
           foregroundColor: Colors.white,
           centerTitle: true,
           elevation: 2,
@@ -81,6 +100,8 @@ class AgendALuzApp extends StatelessWidget {
         '/agendamento': (context) => const AgendamentoFormScreen(),
         '/cliente_form': (context) => const ClienteFormScreen(),
         '/nova_movimentacao': (context) => const MovimentacaoFormScreen(),
+        '/servico_form': (context) => const ServicoFormScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
       },
     );
   }

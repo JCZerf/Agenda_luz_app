@@ -1,11 +1,11 @@
 {
-    "name": "agendaluz",
-    "short_name": "agendaluz",
+    "name": "AgendaLuz",
+    "short_name": "AgendaLuz",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Aplicativo de agendamento e controle financeiro para profissionais autônomos.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -12,9 +12,12 @@ class ClientesScreen extends StatefulWidget {
 
 class _ClientesScreenState extends State<ClientesScreen> {
   List<Cliente> _clientes = [];
+  List<Cliente> _clientesFiltrados = [];
+  String _textoBusca = '';
+  final TextEditingController _controladorBusca = TextEditingController();
 
-  final rosa = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color.fromARGB(255, 255, 255, 255);
+  final rosaPrincipal = const Color(0xFFD9A7B0);
+  final rosaClaro = const Color(0xFFFFF1F3);
   final rosaTexto = const Color(0xFF8A4B57);
 
   @override
@@ -27,6 +30,19 @@ class _ClientesScreenState extends State<ClientesScreen> {
     final lista = await DatabaseHelper().listarClientes();
     setState(() {
       _clientes = lista;
+      _filtrarClientes();
+    });
+  }
+
+  void _filtrarClientes() {
+    setState(() {
+      if (_textoBusca.isEmpty) {
+        _clientesFiltrados = _clientes;
+      } else {
+        _clientesFiltrados = _clientes
+            .where((cliente) => cliente.nome.toLowerCase().contains(_textoBusca.toLowerCase()))
+            .toList();
+      }
     });
   }
 
@@ -41,6 +57,44 @@ class _ClientesScreenState extends State<ClientesScreen> {
     } catch (_) {
       return 'Data inválida';
     }
+  }
+
+  Map<String, dynamic> _obterTagCliente(String? historicoIso) {
+    if (historicoIso == null || historicoIso.trim().isEmpty) {
+      return {'texto': 'Novo cliente', 'cor': Colors.blue, 'corFundo': Colors.blue.shade50};
+    }
+
+    try {
+      final ultimoAtendimento = DateTime.parse(historicoIso);
+      final agora = DateTime.now();
+      final diasAtras = agora.difference(ultimoAtendimento).inDays;
+
+      if (diasAtras <= 5) {
+        return {'texto': 'Recente', 'cor': Colors.green, 'corFundo': Colors.green.shade50};
+      } else if (diasAtras <= 10) {
+        return {'texto': 'Em rotina', 'cor': Colors.blue, 'corFundo': Colors.blue.shade50};
+      } else if (diasAtras <= 15) {
+        return {'texto': 'Agendar logo', 'cor': Colors.orange, 'corFundo': Colors.orange.shade50};
+      } else if (diasAtras <= 30) {
+        return {'texto': 'Atrasando', 'cor': Colors.red, 'corFundo': Colors.red.shade50};
+      } else {
+        return {'texto': 'Há muito tempo', 'cor': Colors.grey, 'corFundo': Colors.grey.shade50};
+      }
+    } catch (e) {
+      return {'texto': 'Data inválida', 'cor': Colors.grey, 'corFundo': Colors.grey.shade50};
+    }
+  }
+
+  String _formatarTelefone(String telefone) {
+    final digitsOnly = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.length == 11) {
+      return '(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 7)}-${digitsOnly.substring(7)}';
+    } else if (digitsOnly.length == 10) {
+      return '(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 6)}-${digitsOnly.substring(6)}';
+    }
+
+    return telefone;
   }
 
   void _mostrarOpcoes(Cliente cliente) {
@@ -143,7 +197,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
               ),
               const SizedBox(height: 16),
               _linhaDetalhe(Icons.person, 'Nome', cliente.nome),
-              _linhaDetalhe(Icons.phone, 'Telefone', cliente.telefone),
+              _linhaDetalhe(Icons.phone, 'Telefone', _formatarTelefone(cliente.telefone)),
               if ((cliente.observacoes?.trim().isNotEmpty ?? false))
                 _linhaDetalhe(Icons.notes, 'Observações', cliente.observacoes!),
               _linhaDetalhe(
@@ -218,51 +272,272 @@ class _ClientesScreenState extends State<ClientesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Clientes')),
-      body: _clientes.isEmpty
-          ? const Center(child: Text('Nenhuma cliente cadastrada.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _clientes.length,
-              itemBuilder: (context, index) {
-                final cliente = _clientes[index];
-                return GestureDetector(
-                  onTap: () => _mostrarOpcoes(cliente),
-                  child: Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    color: rosaClaro,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.person, color: Color(0xFFD9A7B0)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              cliente.nome,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF8A4B57),
-                              ),
-                            ),
-                          ),
-                          const Icon(Icons.more_vert, color: Color(0xFF8A4B57)),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+      appBar: AppBar(
+        backgroundColor: rosaTexto,
+        elevation: 0,
+        title: const Text('Clientes', style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Column(
+        children: [
+          // Informações gerais
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: rosaClaro,
+            child: Row(
+              children: [
+                Icon(Icons.people, color: rosaTexto, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Total de clientes: ${_clientes.length}',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: rosaTexto),
+                ),
+              ],
+            ),
+          ),
+          // Campo de busca
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+            ),
+            child: TextField(
+              controller: _controladorBusca,
+              decoration: InputDecoration(
+                hintText: 'Buscar cliente por nome...',
+                prefixIcon: Icon(Icons.search, color: rosaTexto),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: rosaPrincipal),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: rosaTexto),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: _textoBusca.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _controladorBusca.clear();
+                          setState(() {
+                            _textoBusca = '';
+                            _filtrarClientes();
+                          });
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (valor) {
+                setState(() {
+                  _textoBusca = valor;
+                  _filtrarClientes();
+                });
               },
             ),
+          ),
+          // Informações do filtro
+          if (_textoBusca.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: rosaPrincipal.withOpacity(0.1),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: rosaTexto),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_clientesFiltrados.length} cliente(s) encontrada(s)',
+                    style: TextStyle(fontSize: 12, color: rosaTexto),
+                  ),
+                ],
+              ),
+            ),
+          // Lista de clientes
+          Expanded(
+            child: _clientesFiltrados.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _textoBusca.isEmpty ? Icons.person_off : Icons.search_off,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _textoBusca.isEmpty
+                              ? 'Nenhuma cliente cadastrada.'
+                              : 'Nenhuma cliente encontrada para "$_textoBusca"',
+                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(
+                      16,
+                      12,
+                      16,
+                      80,
+                    ), // Padding inferior para evitar sobreposição com FAB
+                    itemCount: _clientesFiltrados.length,
+                    itemBuilder: (context, index) {
+                      final cliente = _clientesFiltrados[index];
+                      return GestureDetector(
+                        onTap: () => _mostrarOpcoes(cliente),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                // Avatar com inicial do nome
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: rosaPrincipal.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(color: rosaPrincipal.withOpacity(0.3)),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      cliente.nome.isNotEmpty ? cliente.nome[0].toUpperCase() : 'C',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: rosaTexto,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Informações da cliente
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        cliente.nome,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: rosaTexto,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.phone, size: 14, color: Colors.grey[600]),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _formatarTelefone(cliente.telefone),
+                                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.access_time,
+                                            size: 14,
+                                            color: Colors.grey[600],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              _formatarHistorico(cliente.historico),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[600],
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // Tag do cliente
+                                      Row(
+                                        children: [
+                                          Builder(
+                                            builder: (context) {
+                                              final tag = _obterTagCliente(cliente.historico);
+                                              return Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 3,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: tag['corFundo'],
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: tag['cor'], width: 1),
+                                                ),
+                                                child: Text(
+                                                  tag['texto'],
+                                                  style: TextStyle(
+                                                    color: tag['cor'],
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Ícone de mais opções
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: rosaPrincipal.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(Icons.more_vert, color: rosaTexto, size: 20),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, '/cliente_form').then((_) => _carregarClientes());
         },
-        child: const Icon(Icons.person_add),
+        backgroundColor: rosaTexto,
+        child: const Icon(Icons.person_add, color: Colors.white),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controladorBusca.dispose();
+    super.dispose();
   }
 }

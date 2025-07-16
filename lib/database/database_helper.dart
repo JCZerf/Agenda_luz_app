@@ -4,6 +4,8 @@ import 'package:sqflite/sqflite.dart';
 import '../models/atendimento.dart';
 import '../models/cliente.dart';
 import '../models/movimentacao_financeira.dart';
+import '../models/servico.dart';
+import '../services/notification_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -18,21 +20,31 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDb() async {
-    final path = join(await getDatabasesPath(), 'agendaluz_v3.db');
+    final path = join(await getDatabasesPath(), 'agendaluz_v5.db');
 
-    return await openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 5, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   Future<void> marcarAtendimentosConcluidosAutomaticamente() async {
     final dbClient = await db;
+    // Marca como concluído apenas atendimentos que passaram 2 horas do horário marcado
+    // E que não foram reagendados para o futuro
+    final duasHorasAtras = DateTime.now().subtract(const Duration(hours: 2)).toIso8601String();
     final agora = DateTime.now().toIso8601String();
 
     await dbClient.update(
       'atendimentos',
       {'concluido': 1},
-      where: 'data_hora < ? AND concluido = 0',
-      whereArgs: [agora],
+      where: 'data_hora < ? AND data_hora < ? AND concluido = 0',
+      whereArgs: [duasHorasAtras, agora],
     );
+  }
+
+  // Verifica se um atendimento deve ser marcado como concluído automaticamente
+  bool deveSerConcluido(DateTime dataHoraAtendimento) {
+    final agora = DateTime.now();
+    final duasHorasDepois = dataHoraAtendimento.add(const Duration(hours: 2));
+    return agora.isAfter(duasHorasDepois);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -55,7 +67,10 @@ class DatabaseHelper {
         valor REAL NOT NULL,
         pago INTEGER NOT NULL,
         observacoes TEXT,
-        concluido INTEGER DEFAULT 0
+        concluido INTEGER DEFAULT 0,
+        servico_id INTEGER,
+        tempo_estimado_minutos INTEGER,
+        FOREIGN KEY (servico_id) REFERENCES servicos (id)
       )
     ''');
 
@@ -70,6 +85,17 @@ class DatabaseHelper {
         atendimento_id INTEGER
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE servicos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        valor REAL NOT NULL,
+        custo REAL,
+        tempo_medio_minutos INTEGER NOT NULL,
+        data_criacao TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -80,6 +106,24 @@ class DatabaseHelper {
 
     if (oldVersion < 3) {
       await db.execute("ALTER TABLE atendimentos ADD COLUMN concluido INTEGER DEFAULT 0");
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE servicos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nome TEXT NOT NULL,
+          valor REAL NOT NULL,
+          custo REAL,
+          tempo_medio_minutos INTEGER NOT NULL,
+          data_criacao TEXT NOT NULL
+        )
+      ''');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute("ALTER TABLE atendimentos ADD COLUMN servico_id INTEGER");
+      await db.execute("ALTER TABLE atendimentos ADD COLUMN tempo_estimado_minutos INTEGER");
     }
   }
 
@@ -108,6 +152,10 @@ class DatabaseHelper {
       }
     }
 
+    // Agenda notificações para o atendimento
+    final atendimentoComId = a.copyWith(id: id);
+    await NotificationService.agendarNotificacoesAtendimento(atendimentoComId);
+
     return id;
   }
 
@@ -121,16 +169,22 @@ class DatabaseHelper {
     final dbClient = await db;
     return await dbClient.rawQuery('''
       SELECT 
-        id,
-        cliente_id,
-        nome_livre,
-        data_hora,
-        valor,
-        pago,
-        observacoes,
-        concluido
-      FROM atendimentos
-      ORDER BY data_hora ASC
+        a.id,
+        a.cliente_id,
+        a.nome_livre,
+        a.data_hora,
+        a.valor,
+        a.pago,
+        a.observacoes,
+        a.concluido,
+        a.servico_id,
+        a.tempo_estimado_minutos,
+        c.nome as nome_cliente,
+        s.nome as nome_servico
+      FROM atendimentos a
+      LEFT JOIN clientes c ON a.cliente_id = c.id
+      LEFT JOIN servicos s ON a.servico_id = s.id
+      ORDER BY a.data_hora ASC
     ''');
   }
 
@@ -176,6 +230,9 @@ class DatabaseHelper {
       }
     }
 
+    // Reagenda notificações para o atendimento
+    await NotificationService.agendarNotificacoesAtendimento(atendimentoCorrigido);
+
     return resultado;
   }
 
@@ -216,11 +273,15 @@ class DatabaseHelper {
       if (nome != null && nome.trim().isNotEmpty) return nome;
     }
 
-    return (a.nomeLivre ?? 'Cliente').trim().isEmpty ? 'Cliente' : a.nomeLivre;
+    return a.nomeLivre.trim().isEmpty ? 'Cliente' : a.nomeLivre;
   }
 
   Future<int> deletarAtendimento(int id) async {
     final dbClient = await db;
+
+    // Cancela notificações relacionadas ao atendimento
+    await NotificationService.cancelarNotificacoesAtendimento(id);
+
     return await dbClient.delete('atendimentos', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -273,5 +334,119 @@ class DatabaseHelper {
   Future<int> deletarMovimentacao(int id) async {
     final dbClient = await db;
     return await dbClient.delete('movimentacoes_financeiras', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ===================== Previsão de Receita =====================
+
+  Future<List<Atendimento>> listarAtendimentosNaoPagos() async {
+    final dbClient = await db;
+    final maps = await dbClient.query('atendimentos', where: 'pago = 0', orderBy: 'data_hora ASC');
+    return maps.map((map) => Atendimento.fromMap(map)).toList();
+  }
+
+  Future<double> calcularPrevisaoReceita({DateTime? mes}) async {
+    final atendimentos = await listarAtendimentosNaoPagos();
+
+    if (mes != null) {
+      final filtrados = atendimentos
+          .where((a) => a.dataHora.year == mes.year && a.dataHora.month == mes.month)
+          .toList();
+      return filtrados.fold<double>(0.0, (total, atendimento) => total + atendimento.valor);
+    }
+
+    return atendimentos.fold<double>(0.0, (total, atendimento) => total + atendimento.valor);
+  }
+
+  // ===================== CRUD Serviços =====================
+
+  Future<int> inserirServico(Servico servico) async {
+    final dbClient = await db;
+    return await dbClient.insert('servicos', servico.toMap());
+  }
+
+  Future<List<Servico>> listarServicos() async {
+    final dbClient = await db;
+    final maps = await dbClient.query('servicos', orderBy: 'nome ASC');
+    return maps.map((map) => Servico.fromMap(map)).toList();
+  }
+
+  Future<Servico?> buscarServicoPorId(int id) async {
+    final dbClient = await db;
+    final maps = await dbClient.query('servicos', where: 'id = ?', whereArgs: [id]);
+    if (maps.isNotEmpty) {
+      return Servico.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<int> atualizarServico(Servico servico) async {
+    final dbClient = await db;
+    return await dbClient.update(
+      'servicos',
+      servico.toMap(),
+      where: 'id = ?',
+      whereArgs: [servico.id],
+    );
+  }
+
+  Future<int> deletarServico(int id) async {
+    final dbClient = await db;
+    return await dbClient.delete('servicos', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> contarServicosRealizados(int servicoId) async {
+    final dbClient = await db;
+    final result = await dbClient.rawQuery(
+      '''
+      SELECT COUNT(*) as count 
+      FROM atendimentos 
+      WHERE servico_id = ? AND concluido = 1
+    ''',
+      [servicoId],
+    );
+    return result.first['count'] as int;
+  }
+
+  // ===================== Relatórios de Serviços =====================
+
+  Future<Map<String, dynamic>> relatorioMensalServicos({required DateTime mes}) async {
+    final dbClient = await db;
+
+    final inicioMes = DateTime(mes.year, mes.month, 1);
+    final fimMes = DateTime(mes.year, mes.month + 1, 1).subtract(const Duration(days: 1));
+
+    final inicioMesStr = inicioMes.toIso8601String();
+    final fimMesStr = fimMes.toIso8601String();
+
+    // Buscar atendimentos concluídos do mês com informações do serviço
+    final atendimentos = await dbClient.rawQuery(
+      '''
+      SELECT a.*, s.nome as nome_servico
+      FROM atendimentos a
+      LEFT JOIN servicos s ON a.servico_id = s.id
+      WHERE a.data_hora >= ? AND a.data_hora <= ? AND a.concluido = 1
+      ORDER BY a.data_hora ASC
+    ''',
+      [inicioMesStr, fimMesStr],
+    );
+
+    // Contar serviços por tipo
+    final Map<String, int> servicosPorTipo = {};
+    int totalServicos = 0;
+    double valorTotal = 0.0;
+
+    for (final atendimento in atendimentos) {
+      final nomeServico = (atendimento['nome_servico'] as String?) ?? 'Atendimento padrão';
+      servicosPorTipo[nomeServico] = (servicosPorTipo[nomeServico] ?? 0) + 1;
+      totalServicos++;
+      valorTotal += (atendimento['valor'] as double?) ?? 0.0;
+    }
+
+    return {
+      'servicosPorTipo': servicosPorTipo,
+      'totalServicos': totalServicos,
+      'valorTotal': valorTotal,
+      'mes': mes,
+    };
   }
 }
