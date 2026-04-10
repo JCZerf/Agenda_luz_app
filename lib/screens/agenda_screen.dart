@@ -564,19 +564,18 @@ class _AgendaScreenState extends State<AgendaScreen> {
             },
             tooltip: 'Configurações',
           ),
-          if (_abaSelecionada == 2)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.calendar_month, color: Colors.white),
-                onPressed: _selecionarMesAno,
-                tooltip: 'Selecionar mês/ano',
-              ),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: IconButton(
+              icon: const Icon(Icons.calendar_month, color: Colors.white),
+              onPressed: _selecionarMesAno,
+              tooltip: 'Selecionar mês/ano',
+            ),
+          ),
         ],
       ),
 
