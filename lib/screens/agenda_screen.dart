@@ -3,6 +3,8 @@ import 'package:AgendaLuz/models/atendimento.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../utils/app_colors.dart';
+
 class AgendaScreen extends StatefulWidget {
   const AgendaScreen({super.key});
 
@@ -459,8 +461,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   void _mostrarCriarAgendamento() async {
-    const rosaTexto = Color(0xFF8A4B57);
-
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -481,7 +481,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 icon: const Icon(Icons.person),
                 label: const Text('Com cliente cadastrada'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: rosaTexto,
+                  backgroundColor: AppColors.textoEscuro,
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
@@ -498,7 +498,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 icon: const Icon(Icons.person_off),
                 label: const Text('Sem cadastro de cliente'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: rosaTexto,
+                  backgroundColor: AppColors.textoEscuro,
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
@@ -519,9 +519,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const rosaClaro = Color(0xFFFFF1F3);
-    const rosaPrincipal = Color(0xFFD9A7B0);
-    const rosaTexto = Color(0xFF8A4B57);
     final hoje = DateTime.now();
     final subtitulo = _abaSelecionada == 2
         ? toBeginningOfSentenceCase(DateFormat("MMMM 'de' yyyy", 'pt_BR').format(_mesSelecionado))
@@ -530,7 +527,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: Row(
           children: [
@@ -584,7 +581,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           Column(
             children: [
               Container(
-                color: rosaClaro,
+                color: AppColors.rosaClaro,
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -596,13 +593,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
-                          color: selecionado ? rosaTexto : Colors.white,
+                          color: selecionado ? AppColors.textoEscuro : Colors.white,
                           borderRadius: BorderRadius.circular(25),
-                          border: Border.all(color: rosaTexto, width: 2),
+                          border: Border.all(color: AppColors.textoEscuro, width: 2),
                           boxShadow: selecionado
                               ? [
                                   BoxShadow(
-                                    color: rosaTexto.withOpacity(0.3),
+                                    color: AppColors.textoEscuro.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -618,7 +615,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                   : index == 1
                                   ? Icons.view_week
                                   : Icons.calendar_month,
-                              color: selecionado ? Colors.white : rosaTexto,
+                              color: selecionado ? Colors.white : AppColors.textoEscuro,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
@@ -626,7 +623,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                               opcoes[index],
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: selecionado ? Colors.white : rosaTexto,
+                                color: selecionado ? Colors.white : AppColors.textoEscuro,
                                 fontSize: 14,
                               ),
                             ),
@@ -639,14 +636,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
               ),
               if (_abaSelecionada == 2 && !_mesmoMes(_mesSelecionado, DateTime.now()))
                 Container(
-                  color: rosaClaro,
+                  color: AppColors.rosaClaro,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Center(
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: rosaTexto.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.textoEscuro.withOpacity(0.3)),
                       ),
                       child: TextButton.icon(
                         onPressed: () {
@@ -654,11 +651,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
                             _mesSelecionado = DateTime(hoje.year, hoje.month);
                           });
                         },
-                        icon: const Icon(Icons.calendar_today, color: rosaTexto, size: 18),
+                        icon: const Icon(Icons.calendar_today, color: AppColors.textoEscuro, size: 18),
                         label: const Text(
                           'Voltar para Mês Atual',
                           style: TextStyle(
-                            color: rosaTexto,
+                            color: AppColors.textoEscuro,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -672,7 +669,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
           Expanded(
             child: Container(
-              color: rosaClaro,
+              color: AppColors.rosaClaro,
               child: _filtrar().isEmpty
                   ? Center(
                       child: Column(
@@ -779,16 +776,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                       decoration: BoxDecoration(
                                         color: statusConcluido
                                             ? Colors.green[50]
-                                            : rosaPrincipal.withOpacity(0.1),
+                                            : AppColors.rosaPrincipal.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(25),
                                         border: Border.all(
-                                          color: statusConcluido ? Colors.green : rosaPrincipal,
+                                          color: statusConcluido ? Colors.green : AppColors.rosaPrincipal,
                                           width: 2,
                                         ),
                                       ),
                                       child: Icon(
                                         statusConcluido ? Icons.check_circle : Icons.favorite,
-                                        color: statusConcluido ? Colors.green : rosaPrincipal,
+                                        color: statusConcluido ? Colors.green : AppColors.rosaPrincipal,
                                         size: 24,
                                       ),
                                     ),
@@ -803,7 +800,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
-                                              color: rosaTexto,
+                                              color: AppColors.textoEscuro,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -830,7 +827,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                                     Text(
                                                       diaSemana,
                                                       style: const TextStyle(
-                                                        color: rosaTexto,
+                                                        color: AppColors.textoEscuro,
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w500,
                                                       ),
@@ -928,7 +925,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                             ),
                                           ),
                                         const SizedBox(height: 8),
-                                        const Icon(Icons.more_vert, color: rosaTexto, size: 20),
+                                        const Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
                                       ],
                                     ),
                                   ],
@@ -948,7 +945,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: rosaTexto.withOpacity(0.4),
+              color: AppColors.textoEscuro.withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -956,7 +953,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
         ),
         child: FloatingActionButton(
           onPressed: _mostrarCriarAgendamento,
-          backgroundColor: rosaTexto,
+          backgroundColor: AppColors.textoEscuro,
           shape: const CircleBorder(),
           tooltip: 'Novo Agendamento',
           elevation: 0,

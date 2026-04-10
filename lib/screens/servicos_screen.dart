@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../database/database_helper.dart';
 import '../models/servico.dart';
+import '../utils/app_colors.dart';
 
 class ServicosScreen extends StatefulWidget {
   const ServicosScreen({super.key});
@@ -16,10 +17,6 @@ class _ServicosScreenState extends State<ServicosScreen> {
   List<Servico> _servicosFiltrados = [];
   String _textoBusca = '';
   final TextEditingController _controladorBusca = TextEditingController();
-
-  final rosaPrincipal = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
-  final rosaTexto = const Color(0xFF8A4B57);
 
   @override
   void initState() {
@@ -85,7 +82,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
           ),
           const SizedBox(height: 20),
           ListTile(
-            leading: Icon(Icons.visibility, color: rosaTexto),
+            leading: Icon(Icons.visibility, color: AppColors.textoEscuro),
             title: const Text('Visualizar'),
             onTap: () {
               Navigator.pop(context);
@@ -93,7 +90,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.edit, color: rosaTexto),
+            leading: Icon(Icons.edit, color: AppColors.textoEscuro),
             title: const Text('Editar'),
             onTap: () {
               Navigator.pop(context);
@@ -153,7 +150,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      backgroundColor: rosaClaro,
+      backgroundColor: AppColors.rosaClaro,
       builder: (_) {
         return Padding(
           padding: const EdgeInsets.all(24),
@@ -164,7 +161,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
               Center(
                 child: Text(
                   'Detalhes do Serviço',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: rosaTexto),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textoEscuro),
                 ),
               ),
               const SizedBox(height: 20),
@@ -247,10 +244,10 @@ class _ServicosScreenState extends State<ServicosScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icone, color: rosaPrincipal, size: 20),
+          Icon(icone, color: AppColors.rosaPrincipal, size: 20),
           const SizedBox(width: 12),
           Expanded(
-            child: Text('$titulo: $valor', style: TextStyle(fontSize: 16, color: rosaTexto)),
+            child: Text('$titulo: $valor', style: TextStyle(fontSize: 16, color: AppColors.textoEscuro)),
           ),
         ],
       ),
@@ -268,11 +265,11 @@ class _ServicosScreenState extends State<ServicosScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
-              Icon(Icons.bar_chart, color: rosaTexto),
+              Icon(Icons.bar_chart, color: AppColors.textoEscuro),
               const SizedBox(width: 8),
               Text(
                 'Relatório - ${DateFormat('MMMM yyyy', 'pt_BR').format(mesAtual)}',
-                style: TextStyle(color: rosaTexto),
+                style: TextStyle(color: AppColors.textoEscuro),
               ),
             ],
           ),
@@ -285,7 +282,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: rosaClaro,
+                    color: AppColors.rosaClaro,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -301,7 +298,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
                 if ((relatorio['servicosPorTipo'] as Map).isNotEmpty) ...[
                   Text(
                     'Serviços por tipo:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: rosaTexto),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoEscuro),
                   ),
                   const SizedBox(height: 8),
                   ...(relatorio['servicosPorTipo'] as Map<String, int>).entries.map(
@@ -350,7 +347,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: const Text('Serviços', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -367,14 +364,14 @@ class _ServicosScreenState extends State<ServicosScreen> {
           // Informações gerais
           Container(
             padding: const EdgeInsets.all(16),
-            color: rosaClaro,
+            color: AppColors.rosaClaro,
             child: Row(
               children: [
-                Icon(Icons.favorite, color: rosaTexto, size: 20),
+                Icon(Icons.favorite, color: AppColors.textoEscuro, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Total de serviços: ${_servicos.length}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: rosaTexto),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
                 ),
               ],
             ),
@@ -391,14 +388,14 @@ class _ServicosScreenState extends State<ServicosScreen> {
               controller: _controladorBusca,
               decoration: InputDecoration(
                 hintText: 'Buscar serviço por nome...',
-                prefixIcon: Icon(Icons.search, color: rosaTexto),
+                prefixIcon: Icon(Icons.search, color: AppColors.textoEscuro),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: rosaPrincipal),
+                  borderSide: BorderSide(color: AppColors.rosaPrincipal),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: rosaTexto),
+                  borderSide: BorderSide(color: AppColors.textoEscuro),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -428,14 +425,14 @@ class _ServicosScreenState extends State<ServicosScreen> {
           if (_textoBusca.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: rosaPrincipal.withOpacity(0.1),
+              color: AppColors.rosaPrincipal.withOpacity(0.1),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: rosaTexto),
+                  Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
                   const SizedBox(width: 8),
                   Text(
                     '${_servicosFiltrados.length} serviço(s) encontrado(s)',
-                    style: TextStyle(fontSize: 12, color: rosaTexto),
+                    style: TextStyle(fontSize: 12, color: AppColors.textoEscuro),
                   ),
                 ],
               ),
@@ -493,11 +490,11 @@ class _ServicosScreenState extends State<ServicosScreen> {
                                   width: 50,
                                   height: 50,
                                   decoration: BoxDecoration(
-                                    color: rosaPrincipal.withOpacity(0.2),
+                                    color: AppColors.rosaPrincipal.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(color: rosaPrincipal.withOpacity(0.3)),
+                                    border: Border.all(color: AppColors.rosaPrincipal.withOpacity(0.3)),
                                   ),
-                                  child: Icon(Icons.favorite, color: rosaTexto, size: 24),
+                                  child: Icon(Icons.favorite, color: AppColors.textoEscuro, size: 24),
                                 ),
                                 const SizedBox(width: 16),
 
@@ -511,7 +508,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: rosaTexto,
+                                          color: AppColors.textoEscuro,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -575,10 +572,10 @@ class _ServicosScreenState extends State<ServicosScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: rosaPrincipal.withOpacity(0.1),
+                                    color: AppColors.rosaPrincipal.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(Icons.more_vert, color: rosaTexto, size: 20),
+                                  child: Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
                                 ),
                               ],
                             ),
@@ -594,7 +591,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
         onPressed: () {
           Navigator.pushNamed(context, '/servico_form').then((_) => _carregarServicos());
         },
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

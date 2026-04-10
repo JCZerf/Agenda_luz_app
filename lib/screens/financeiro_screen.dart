@@ -1,3 +1,4 @@
+import '../utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -79,11 +80,10 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
   @override
   Widget build(BuildContext context) {
     final listaFiltrada = _filtrarPorMes(_movimentacoes);
-    const rosaTexto = Color(0xFF8A4B57);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         title: const Text(
           'Financeiro',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
@@ -100,7 +100,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left, color: rosaTexto),
+                  icon: const Icon(Icons.chevron_left, color: AppColors.textoEscuro),
                   onPressed: () => _mudarMes(-1),
                 ),
                 Text(
@@ -110,11 +110,11 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: rosaTexto,
+                    color: AppColors.textoEscuro,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right, color: rosaTexto),
+                  icon: const Icon(Icons.chevron_right, color: AppColors.textoEscuro),
                   onPressed: () => _mudarMes(1),
                 ),
               ],
@@ -155,14 +155,14 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                           title: Text(
                             m.descricao,
                             style: const TextStyle(
-                              color: rosaTexto,
+                              color: AppColors.textoEscuro,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
                           ),
                           subtitle: Text(
                             '$data • ${m.origem}',
-                            style: const TextStyle(color: rosaTexto),
+                            style: const TextStyle(color: AppColors.textoEscuro),
                           ),
                           trailing: Text(
                             '${m.isReceita ? '+' : '-'}R\$ ${m.valor.toStringAsFixed(2)}',
@@ -200,7 +200,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
             await _carregarPrevisaoReceita();
           }
         },
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         child: const Icon(Icons.attach_money, color: Colors.white),
       ),
     );
@@ -219,7 +219,6 @@ class _ResumoFinanceiroCard extends StatelessWidget {
     final despesaTotal = movimentacoes.where((m) => !m.isReceita).fold(0.0, (s, m) => s + m.valor);
     final saldo = receitaTotal - despesaTotal;
 
-    const rosaTexto = Color(0xFF8A4B57);
 
     return Card(
       color: Colors.white,
@@ -233,7 +232,7 @@ class _ResumoFinanceiroCard extends StatelessWidget {
             _ResumoItem(label: 'Receita', valor: receitaTotal, cor: Colors.green[700]!),
             _ResumoItem(label: 'Despesas', valor: despesaTotal, cor: Colors.red[700]!),
             const Divider(),
-            _ResumoItem(label: 'Saldo Líquido', valor: saldo, cor: rosaTexto, destaque: true),
+            _ResumoItem(label: 'Saldo Líquido', valor: saldo, cor: AppColors.textoEscuro, destaque: true),
             if (previsaoReceita > 0) ...[
               const SizedBox(height: 8),
               _ResumoItem(

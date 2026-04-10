@@ -1,3 +1,4 @@
+import '../utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -210,7 +211,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
     List<TextInputFormatter>? inputFormatters,
     IconData? icon,
   }) {
-    const rosaTexto = Color(0xFF8A4B57);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -223,8 +223,8 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
           labelText: label == 'Observações' ? '$label (opcional)' : label,
           hintText: 'Digite $label',
           prefixIcon: icon != null
-              ? Icon(icon, color: rosaTexto)
-              : const Icon(Icons.favorite_border, color: rosaTexto),
+              ? Icon(icon, color: AppColors.textoEscuro)
+              : const Icon(Icons.favorite_border, color: AppColors.textoEscuro),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
@@ -232,7 +232,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: rosaTexto, width: 2),
+            borderSide: const BorderSide(color: AppColors.textoEscuro, width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
@@ -266,11 +266,10 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const rosaTexto = Color(0xFF8A4B57);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         title: Text(
           clienteEdicao != null ? 'Editar Cliente' : 'Cadastro de Cliente',
           style: const TextStyle(color: Colors.white),
@@ -304,7 +303,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
               ElevatedButton(
                 onPressed: _salvando ? null : _salvarCliente,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: rosaTexto,
+                  backgroundColor: AppColors.textoEscuro,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

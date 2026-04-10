@@ -3,6 +3,8 @@ import 'package:AgendaLuz/models/cliente.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../utils/app_colors.dart';
+
 class ClientesScreen extends StatefulWidget {
   const ClientesScreen({super.key});
 
@@ -15,10 +17,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
   List<Cliente> _clientesFiltrados = [];
   String _textoBusca = '';
   final TextEditingController _controladorBusca = TextEditingController();
-
-  final rosaPrincipal = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
-  final rosaTexto = const Color(0xFF8A4B57);
 
   @override
   void initState() {
@@ -181,7 +179,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      backgroundColor: rosaClaro,
+      backgroundColor: AppColors.rosaClaro,
       builder: (_) {
         return Padding(
           padding: const EdgeInsets.all(24),
@@ -192,7 +190,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
               Center(
                 child: Text(
                   'Detalhes da Cliente',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: rosaTexto),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textoEscuro),
                 ),
               ),
               const SizedBox(height: 16),
@@ -273,7 +271,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: const Text('Clientes', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -283,14 +281,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
           // Informações gerais
           Container(
             padding: const EdgeInsets.all(16),
-            color: rosaClaro,
+            color: AppColors.rosaClaro,
             child: Row(
               children: [
-                Icon(Icons.people, color: rosaTexto, size: 20),
+                Icon(Icons.people, color: AppColors.textoEscuro, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Total de clientes: ${_clientes.length}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: rosaTexto),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
                 ),
               ],
             ),
@@ -306,14 +304,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
               controller: _controladorBusca,
               decoration: InputDecoration(
                 hintText: 'Buscar cliente por nome...',
-                prefixIcon: Icon(Icons.search, color: rosaTexto),
+                prefixIcon: Icon(Icons.search, color: AppColors.textoEscuro),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: rosaPrincipal),
+                  borderSide: BorderSide(color: AppColors.rosaPrincipal),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: rosaTexto),
+                  borderSide: BorderSide(color: AppColors.textoEscuro),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -342,14 +340,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
           if (_textoBusca.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: rosaPrincipal.withOpacity(0.1),
+              color: AppColors.rosaPrincipal.withOpacity(0.1),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: rosaTexto),
+                  Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
                   const SizedBox(width: 8),
                   Text(
                     '${_clientesFiltrados.length} cliente(s) encontrada(s)',
-                    style: TextStyle(fontSize: 12, color: rosaTexto),
+                    style: TextStyle(fontSize: 12, color: AppColors.textoEscuro),
                   ),
                 ],
               ),
@@ -411,9 +409,9 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                   width: 50,
                                   height: 50,
                                   decoration: BoxDecoration(
-                                    color: rosaPrincipal.withOpacity(0.2),
+                                    color: AppColors.rosaPrincipal.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(color: rosaPrincipal.withOpacity(0.3)),
+                                    border: Border.all(color: AppColors.rosaPrincipal.withOpacity(0.3)),
                                   ),
                                   child: Center(
                                     child: Text(
@@ -421,7 +419,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
-                                        color: rosaTexto,
+                                        color: AppColors.textoEscuro,
                                       ),
                                     ),
                                   ),
@@ -437,7 +435,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: rosaTexto,
+                                          color: AppColors.textoEscuro,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -510,10 +508,10 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: rosaPrincipal.withOpacity(0.1),
+                                    color: AppColors.rosaPrincipal.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(Icons.more_vert, color: rosaTexto, size: 20),
+                                  child: Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
                                 ),
                               ],
                             ),
@@ -529,7 +527,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
         onPressed: () {
           Navigator.pushNamed(context, '/cliente_form').then((_) => _carregarClientes());
         },
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         child: const Icon(Icons.person_add, color: Colors.white),
       ),
     );

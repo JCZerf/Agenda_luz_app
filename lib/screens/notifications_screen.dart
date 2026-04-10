@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../services/notification_service.dart';
+import '../utils/app_colors.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -13,10 +14,6 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   List<PendingNotificationRequest> _notificacoesPendentes = [];
   bool _carregando = true;
-
-  final rosaPrincipal = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
-  final rosaTexto = const Color(0xFF8A4B57);
 
   @override
   void initState() {
@@ -109,13 +106,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: const Text('Notificações', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
-        color: rosaClaro,
+        color: AppColors.rosaClaro,
         child: Column(
           children: [
             // Botões de ação
@@ -131,7 +128,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           icon: const Icon(Icons.refresh),
                           label: const Text('Reagendar Todas'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: rosaPrincipal,
+                            backgroundColor: AppColors.rosaPrincipal,
                             foregroundColor: Colors.white,
                           ),
                         ),
@@ -172,11 +169,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: rosaTexto),
+                  Icon(Icons.info_outline, color: AppColors.textoEscuro),
                   const SizedBox(width: 8),
                   Text(
                     'Notificações pendentes: ${_notificacoesPendentes.length}',
-                    style: TextStyle(color: rosaTexto, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -229,14 +226,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: rosaPrincipal.withOpacity(0.2),
+                                color: AppColors.rosaPrincipal.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Icon(Icons.notifications, color: rosaTexto),
+                              child: Icon(Icons.notifications, color: AppColors.textoEscuro),
                             ),
                             title: Text(
                               notificacao.title ?? 'Sem título',
-                              style: TextStyle(fontWeight: FontWeight.w600, color: rosaTexto),
+                              style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +246,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 Text(
                                   'Tipo: ${_formatarTipoNotificacao(notificacao.payload)}',
                                   style: TextStyle(
-                                    color: rosaPrincipal,
+                                    color: AppColors.rosaPrincipal,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),

@@ -4,6 +4,7 @@ import 'package:AgendaLuz/screens/notifications_screen.dart';
 import 'package:AgendaLuz/screens/servico_form_screen.dart';
 import 'package:AgendaLuz/services/notification_service.dart';
 import 'package:AgendaLuz/services/backup_service.dart';
+import 'package:AgendaLuz/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -56,54 +57,58 @@ class AgendALuzApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('pt', 'BR')],
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFFBEFF1), // fundo geral bem claro
-        primaryColor: const Color(0xFF8A4B57), // rosa mais escuro
+        scaffoldBackgroundColor: AppColors.rosaFundoGeral,
+        primaryColor: AppColors.rosaEscuro,
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: const Color(0xFF8A4B57),
-          secondary: const Color(0xFFE9B6C0), // tom médio para destaque
+          primary: AppColors.rosaEscuro,
+          secondary: AppColors.rosaMedio,
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF8A4B57),
-          foregroundColor: Colors.white,
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.rosaEscuro,
+          foregroundColor: AppColors.textoBranco,
           centerTitle: true,
           elevation: 2,
-          titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          titleTextStyle: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textoBranco,
+          ),
         ),
-        textTheme: const TextTheme(
+        textTheme: TextTheme(
           titleLarge: TextStyle(
-            color: Color(0xFF8A4B57), // rosa escuro
+            color: AppColors.textoEscuro,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
-          bodyMedium: TextStyle(color: Color(0xFF8A4B57), fontSize: 16),
-          labelLarge: TextStyle(color: Color(0xFF8A4B57), fontWeight: FontWeight.w600),
+          bodyMedium: TextStyle(color: AppColors.textoEscuro, fontSize: 16),
+          labelLarge: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.w600),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFFFFF1F3),
+          fillColor: AppColors.rosaClaro,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          hintStyle: const TextStyle(color: Colors.grey),
-          prefixIconColor: const Color(0xFFD9A7B0),
+          hintStyle: TextStyle(color: AppColors.cinza),
+          prefixIconColor: AppColors.rosaPrincipal,
         ),
-        elevatedButtonTheme: const ElevatedButtonThemeData(
+        elevatedButtonTheme: ElevatedButtonThemeData(
           style: ButtonStyle(
-            backgroundColor: WidgetStatePropertyAll(Color(0xFFD9A7B0)),
-            foregroundColor: WidgetStatePropertyAll(Colors.white),
+            backgroundColor: WidgetStatePropertyAll(AppColors.rosaPrincipal),
+            foregroundColor: WidgetStatePropertyAll(AppColors.textoBranco),
             shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
             ),
             textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Color(0xFFD9A7B0),
-          foregroundColor: Colors.white,
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: AppColors.rosaPrincipal,
+          foregroundColor: AppColors.textoBranco,
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFD9A7B0)),
+        iconTheme: IconThemeData(color: AppColors.rosaPrincipal),
       ),
       initialRoute: '/home',
       routes: {
