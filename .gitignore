@@ -14,6 +14,7 @@ migrate_working_dir/
 .metadata
 .flutter-plugins
 .flutter-plugins-dependencies
+.codex
 
 # IntelliJ related
 *.iml
