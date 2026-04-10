@@ -20,7 +20,7 @@ class BackupService {
       final arquivo = await _salvarBackupLocal(dadosBackup, 'backup_automatico');
       return arquivo != null;
     } catch (e) {
-      print('Erro no backup automatico: $e');
+      debugPrint('Erro no backup automatico: $e');
       return false;
     }
   }
@@ -28,56 +28,28 @@ class BackupService {
   // Fazer backup manual e compartilhar
   Future<bool> fazerBackupManual(BuildContext context) async {
     try {
-      print('=== INICIANDO BACKUP MANUAL ===');
-      
-      // Teste 1: Verificar se consegue coletar dados
       final dadosBackup = await _coletarDadosCompletos();
-      final totalClientes = dadosBackup['dados']['clientes'].length;
-      final totalAtendimentos = dadosBackup['dados']['atendimentos'].length;
-      print('✅ Dados coletados: $totalClientes clientes, $totalAtendimentos atendimentos');
+      File? arquivo = await _salvarBackupLocal(dadosBackup, 'backup_manual');
       
-      // Teste 2: Verificar se consegue acessar diretórios
-      try {
-        final directory = await getApplicationDocumentsDirectory();
-        print('✅ Diretório documentos: ${directory.path}');
-      } catch (e) {
-        print('❌ Erro ao acessar diretório documentos: $e');
-      }
-      
-      try {
-        final tempDir = await getTemporaryDirectory();
-        print('✅ Diretório temporário: ${tempDir.path}');
-      } catch (e) {
-        print('❌ Erro ao acessar diretório temporário: $e');
-      }
-      
-      // Teste 3: Criar backup usando método simples
-      File? arquivo = await _salvarBackupSimples(dadosBackup, 'backup_manual');
-      
-      if (arquivo != null) {
-        print('✅ Arquivo criado: ${arquivo.path}');
-        
-        // Teste 4: Verificar se o Share funciona
-        try {
-          final resultado = await Share.shareXFiles([XFile(arquivo.path)], 
-            text: 'Backup AgendaLuz - ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}');
-          
-          print('✅ Compartilhamento: $resultado');
-          _mostrarMensagem(context, 'Backup criado e compartilhado! 🎉');
-          return true;
-        } catch (shareError) {
-          print('❌ Erro no compartilhamento: $shareError');
-          _mostrarMensagem(context, 'Backup criado mas erro ao compartilhar: $shareError');
-          return false;
-        }
-      } else {
-        print('❌ FALHA: Não foi possível criar arquivo');
+      if (arquivo == null) {
         _mostrarMensagem(context, 'Erro: não foi possível criar o arquivo de backup');
         return false;
       }
+      
+      try {
+        await Share.shareXFiles(
+          [XFile(arquivo.path)], 
+          text: 'Backup AgendaLuz - ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}'
+        );
+        
+        _mostrarMensagem(context, 'Backup criado e compartilhado!');
+        return true;
+      } catch (shareError) {
+        _mostrarMensagem(context, 'Backup criado em: ${arquivo.path}\nMas não foi possível compartilhar');
+        return true;
+      }
     } catch (e) {
-      print('❌ ERRO GERAL: $e');
-      _mostrarMensagem(context, 'Erro no backup: $e');
+      _mostrarMensagem(context, 'Erro ao criar backup: $e');
       return false;
     }
   }
@@ -92,7 +64,7 @@ class BackupService {
     final servicos = await db.query('servicos');
 
     return {
-      'versao_backup': '1.0',
+      'versao_backup': '2.0',
       'data_backup': DateTime.now().toIso8601String(),
       'app_version': '1.4.2+17',
       'dados': {
@@ -104,87 +76,44 @@ class BackupService {
     };
   }
 
-  // Salvar backup com método simples
-  Future<File?> _salvarBackupSimples(Map<String, dynamic> dados, String tipo) async {
+  // Salvar backup localmente com estratégia de fallback
+  Future<File?> _salvarBackupLocal(Map<String, dynamic> dados, String tipo) async {
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final nomeArquivo = 'agendaluz_${tipo}_$timestamp.json';
+    
+    String jsonString;
     try {
-      print('📁 Tentando salvar backup...');
-      
-      // Tentar primeiro no diretório de documentos
-      try {
-        final directory = await getApplicationDocumentsDirectory();
-        final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-        final nomeArquivo = 'agendaluz_${tipo}_$timestamp.json';
-        final arquivo = File('${directory.path}/$nomeArquivo');
-        
-        final jsonString = jsonEncode(dados);
-        await arquivo.writeAsString(jsonString);
-        
-        if (await arquivo.exists()) {
-          final tamanho = await arquivo.length();
-          print('✅ Arquivo salvo em documentos: ${arquivo.path} ($tamanho bytes)');
-          return arquivo;
-        }
-      } catch (e) {
-        print('⚠️ Falha em documentos: $e');
-      }
-      
-      // Se falhou, tentar no diretório temporário
-      try {
-        final directory = await getTemporaryDirectory();
-        final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-        final nomeArquivo = 'agendaluz_${tipo}_$timestamp.json';
-        final arquivo = File('${directory.path}/$nomeArquivo');
-        
-        final jsonString = jsonEncode(dados);
-        await arquivo.writeAsString(jsonString);
-        
-        if (await arquivo.exists()) {
-          final tamanho = await arquivo.length();
-          print('✅ Arquivo salvo em temp: ${arquivo.path} ($tamanho bytes)');
-          return arquivo;
-        }
-      } catch (e) {
-        print('⚠️ Falha em temp: $e');
-      }
-      
-      print('❌ Todas as tentativas falharam');
-      return null;
+      jsonString = jsonEncode(dados);
     } catch (e) {
-      print('❌ Erro geral ao salvar: $e');
+      debugPrint('Erro ao converter dados para JSON: $e');
       return null;
     }
-  }
-
-  // Salvar backup localmente
-  Future<File?> _salvarBackupLocal(Map<String, dynamic> dados, String tipo) async {
+    
     try {
-      print('Iniciando salvamento do backup...');
-      
       final directory = await getApplicationDocumentsDirectory();
-      print('Diretório: ${directory.path}');
-      
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final nomeArquivo = 'agendaluz_${tipo}_$timestamp.json';
       final arquivo = File('${directory.path}/$nomeArquivo');
-      
-      print('Salvando arquivo: ${arquivo.path}');
-      
-      final jsonString = jsonEncode(dados);
       await arquivo.writeAsString(jsonString);
       
-      // Verificar se o arquivo foi criado
       if (await arquivo.exists()) {
-        final tamanho = await arquivo.length();
-        print('Arquivo criado com sucesso! Tamanho: $tamanho bytes');
         return arquivo;
-      } else {
-        print('Erro: arquivo não foi criado');
-        return null;
       }
     } catch (e) {
-      print('Erro ao salvar backup: $e');
-      return null;
+      debugPrint('Falha ao salvar em documentos: $e');
     }
+    
+    try {
+      final directory = await getTemporaryDirectory();
+      final arquivo = File('${directory.path}/$nomeArquivo');
+      await arquivo.writeAsString(jsonString);
+      
+      if (await arquivo.exists()) {
+        return arquivo;
+      }
+    } catch (e) {
+      debugPrint('Falha ao salvar em temp: $e');
+    }
+    
+    return null;
   }
 
   // Listar backups salvos localmente
@@ -226,7 +155,7 @@ class BackupService {
             'dataBackup': dataBackup,
           });
         } catch (e) {
-          print('Erro ao processar arquivo ${arquivo.path}: $e');
+          debugPrint('Erro ao processar arquivo ${arquivo.path}: $e');
         }
       }
       
@@ -235,7 +164,7 @@ class BackupService {
       
       return backups;
     } catch (e) {
-      print('Erro ao listar backups: $e');
+      debugPrint('Erro ao listar backups: $e');
       return [];
     }
   }
@@ -243,44 +172,34 @@ class BackupService {
   // Restaurar backup de um arquivo
   Future<bool> restaurarBackup(BuildContext context, String caminhoArquivo) async {
     try {
-      print('=== INICIANDO RESTAURAÇÃO ===');
-      print('Arquivo: $caminhoArquivo');
-      
-      // Verificar se o arquivo existe
       final arquivo = File(caminhoArquivo);
       if (!await arquivo.exists()) {
         _mostrarMensagem(context, 'Arquivo de backup não encontrado!');
         return false;
       }
       
-      // Ler o conteúdo do arquivo
       final conteudo = await arquivo.readAsString();
       final dadosBackup = jsonDecode(conteudo);
       
-      // Validar estrutura do backup
       if (!_validarEstruturalBackup(dadosBackup)) {
         _mostrarMensagem(context, 'Arquivo de backup inválido!');
         return false;
       }
       
-      // Confirmar com o usuário antes de restaurar
       bool? confirmar = await _confirmarRestauracao(context, dadosBackup);
       if (confirmar != true) {
         _mostrarMensagem(context, 'Restauração cancelada pelo usuário');
         return false;
       }
       
-      // Fazer backup atual antes de restaurar (segurança)
       await fazerBackupAutomatico();
-      
-      // Restaurar dados
       await _restaurarDados(dadosBackup['dados']);
       
-      _mostrarMensagem(context, 'Backup restaurado com sucesso! 🎉');
+      _mostrarMensagem(context, 'Backup restaurado com sucesso!');
       return true;
       
     } catch (e) {
-      print('❌ Erro na restauração: $e');
+      debugPrint('Erro na restauracao: $e');
       _mostrarMensagem(context, 'Erro ao restaurar backup: $e');
       return false;
     }
@@ -289,26 +208,27 @@ class BackupService {
   // Validar estrutura do backup
   bool _validarEstruturalBackup(Map<String, dynamic> dados) {
     try {
-      // Verificar campos obrigatórios
       if (!dados.containsKey('versao_backup') || 
           !dados.containsKey('data_backup') || 
           !dados.containsKey('dados')) {
-        print('❌ Estrutura inválida: campos obrigatórios ausentes');
         return false;
       }
       
-      final dadosTabelas = dados['dados'] as Map<String, dynamic>;
-      
-      // Verificar se contém as tabelas principais
-      if (!dadosTabelas.containsKey('clientes')) {
-        print('❌ Tabela clientes não encontrada');
+      final dadosTabelas = dados['dados'];
+      if (dadosTabelas == null || dadosTabelas is! Map<String, dynamic>) {
         return false;
       }
       
-      print('✅ Estrutura do backup válida');
+      final tabelasObrigatorias = ['clientes', 'atendimentos', 'movimentacoes_financeiras', 'servicos'];
+      for (final tabela in tabelasObrigatorias) {
+        if (dadosTabelas.containsKey(tabela) && dadosTabelas[tabela] is! List) {
+          return false;
+        }
+      }
+      
       return true;
     } catch (e) {
-      print('❌ Erro na validação: $e');
+      debugPrint('Erro na validacao: $e');
       return false;
     }
   }
@@ -361,52 +281,68 @@ class BackupService {
   Future<void> _restaurarDados(Map<String, dynamic> dados) async {
     final db = await _databaseHelper.db;
     
-    print('🔄 Iniciando restauração dos dados...');
-    
-    // Limpar tabelas existentes
-    await db.delete('movimentacoes_financeiras');
-    await db.delete('atendimentos'); 
-    await db.delete('servicos');
-    await db.delete('clientes');
-    print('✅ Tabelas limpas');
-    
-    // Restaurar clientes
-    if (dados.containsKey('clientes')) {
-      final clientes = dados['clientes'] as List;
-      for (var cliente in clientes) {
-        await db.insert('clientes', cliente as Map<String, dynamic>);
+    try {
+      await db.execute('PRAGMA foreign_keys = OFF');
+      
+      await db.delete('movimentacoes_financeiras');
+      await db.delete('atendimentos');
+      await db.delete('servicos');
+      await db.delete('clientes');
+      
+      if (dados.containsKey('clientes')) {
+        final clientes = dados['clientes'] as List;
+        for (var cliente in clientes) {
+          try {
+            await db.insert('clientes', cliente as Map<String, dynamic>);
+          } catch (e) {
+            debugPrint('Erro ao restaurar cliente: $e');
+          }
+        }
       }
-      print('✅ Clientes restaurados: ${clientes.length}');
-    }
-    
-    // Restaurar serviços
-    if (dados.containsKey('servicos')) {
-      final servicos = dados['servicos'] as List;
-      for (var servico in servicos) {
-        await db.insert('servicos', servico as Map<String, dynamic>);
+      
+      if (dados.containsKey('servicos')) {
+        final servicos = dados['servicos'] as List;
+        for (var servico in servicos) {
+          try {
+            await db.insert('servicos', servico as Map<String, dynamic>);
+          } catch (e) {
+            debugPrint('Erro ao restaurar servico: $e');
+          }
+        }
       }
-      print('✅ Serviços restaurados: ${servicos.length}');
-    }
-    
-    // Restaurar atendimentos
-    if (dados.containsKey('atendimentos')) {
-      final atendimentos = dados['atendimentos'] as List;
-      for (var atendimento in atendimentos) {
-        await db.insert('atendimentos', atendimento as Map<String, dynamic>);
+      
+      if (dados.containsKey('atendimentos')) {
+        final atendimentos = dados['atendimentos'] as List;
+        for (var atendimento in atendimentos) {
+          try {
+            await db.insert('atendimentos', atendimento as Map<String, dynamic>);
+          } catch (e) {
+            debugPrint('Erro ao restaurar atendimento: $e');
+          }
+        }
       }
-      print('✅ Atendimentos restaurados: ${atendimentos.length}');
-    }
-    
-    // Restaurar movimentações financeiras
-    if (dados.containsKey('movimentacoes_financeiras')) {
-      final movimentacoes = dados['movimentacoes_financeiras'] as List;
-      for (var movimentacao in movimentacoes) {
-        await db.insert('movimentacoes_financeiras', movimentacao as Map<String, dynamic>);
+      
+      if (dados.containsKey('movimentacoes_financeiras')) {
+        final movimentacoes = dados['movimentacoes_financeiras'] as List;
+        for (var movimentacao in movimentacoes) {
+          try {
+            await db.insert('movimentacoes_financeiras', movimentacao as Map<String, dynamic>);
+          } catch (e) {
+            debugPrint('Erro ao restaurar movimentacao: $e');
+          }
+        }
       }
-      print('✅ Movimentações restauradas: ${movimentacoes.length}');
+      
+      await db.execute('PRAGMA foreign_keys = ON');
+    } catch (e) {
+      debugPrint('Erro durante restauracao: $e');
+      
+      try {
+        await db.execute('PRAGMA FOREIGN_KEYS = ON');
+      } catch (_) {}
+      
+      rethrow;
     }
-    
-    print('🎉 Restauração concluída!');
   }
 
   // Mostrar mensagem
