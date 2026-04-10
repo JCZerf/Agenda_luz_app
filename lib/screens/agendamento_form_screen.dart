@@ -1,4 +1,5 @@
 import 'package:AgendaLuz/database/database_helper.dart';
+import '../utils/app_colors.dart';
 import 'package:AgendaLuz/models/atendimento.dart';
 import 'package:AgendaLuz/models/cliente.dart';
 import 'package:AgendaLuz/models/servico.dart';
@@ -34,9 +35,6 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
 
   Atendimento? agendamentoEdicao;
 
-  final rosa = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
-  final rosaTexto = const Color(0xFF8A4B57);
 
   @override
   void didChangeDependencies() {
@@ -210,7 +208,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: Text(
           agendamentoEdicao != null ? 'Editar Agendamento' : 'Novo Agendamento',
@@ -219,7 +217,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
-        color: rosaClaro,
+        color: AppColors.rosaClaro,
         child: Form(
           key: _formKey,
           child: ListView(
@@ -283,11 +281,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: rosaTexto),
+                Icon(Icons.person, color: AppColors.textoEscuro),
                 const SizedBox(width: 8),
                 Text(
                   'Cliente',
-                  style: TextStyle(color: rosaTexto, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -299,14 +297,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                 value: clienteSelecionadoId,
                 decoration: InputDecoration(
                   hintText: 'Selecione uma cliente',
-                  prefixIcon: Icon(Icons.person_search, color: rosaTexto),
+                  prefixIcon: Icon(Icons.person_search, color: AppColors.textoEscuro),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: rosa, width: 2),
+                    borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
                   ),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -323,14 +321,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                 controller: nomeLivreController,
                 decoration: InputDecoration(
                   hintText: 'Nome da cliente',
-                  prefixIcon: Icon(Icons.person_add, color: rosaTexto),
+                  prefixIcon: Icon(Icons.person_add, color: AppColors.textoEscuro),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: rosa, width: 2),
+                    borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
                   ),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -365,11 +363,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.schedule, color: rosaTexto),
+                Icon(Icons.schedule, color: AppColors.textoEscuro),
                 const SizedBox(width: 8),
                 Text(
                   'Data e Horário',
-                  style: TextStyle(color: rosaTexto, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -388,7 +386,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today, color: rosaTexto, size: 18),
+                          Icon(Icons.calendar_today, color: AppColors.textoEscuro, size: 18),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -420,7 +418,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.access_time, color: rosaTexto, size: 18),
+                          Icon(Icons.access_time, color: AppColors.textoEscuro, size: 18),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -463,11 +461,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.spa, color: rosaTexto),
+                Icon(Icons.spa, color: AppColors.textoEscuro),
                 const SizedBox(width: 8),
                 Text(
                   'Tipo de Serviço',
-                  style: TextStyle(color: rosaTexto, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -515,7 +513,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       decoration: InputDecoration(
                         labelText: 'Tempo estimado (min)',
                         hintText: 'Ex: 60',
-                        prefixIcon: Icon(Icons.timer, color: rosaTexto),
+                        prefixIcon: Icon(Icons.timer, color: AppColors.textoEscuro),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       style: const TextStyle(fontSize: 13),
@@ -546,11 +544,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.attach_money, color: rosaTexto),
+                Icon(Icons.attach_money, color: AppColors.textoEscuro),
                 const SizedBox(width: 8),
                 Text(
                   'Valor do Atendimento',
-                  style: TextStyle(color: rosaTexto, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -561,14 +559,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
               decoration: InputDecoration(
                 hintText: 'Digite o valor',
                 prefixText: 'R\$ ',
-                prefixIcon: Icon(Icons.monetization_on, color: rosaTexto),
+                prefixIcon: Icon(Icons.monetization_on, color: AppColors.textoEscuro),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: rosa, width: 2),
+                  borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -602,11 +600,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.payment, color: rosaTexto),
+                Icon(Icons.payment, color: AppColors.textoEscuro),
                 const SizedBox(width: 8),
                 Text(
                   'Status de Pagamento',
-                  style: TextStyle(color: rosaTexto, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -706,11 +704,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.note_alt, color: rosaTexto),
+                Icon(Icons.note_alt, color: AppColors.textoEscuro),
                 const SizedBox(width: 8),
                 Text(
                   'Observações (opcional)',
-                  style: TextStyle(color: rosaTexto, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -726,7 +724,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: rosa, width: 2),
+                  borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -777,14 +775,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         gradient: LinearGradient(
           colors: _salvando
               ? [Colors.grey, Colors.grey.withOpacity(0.8)]
-              : [rosaTexto, rosaTexto.withOpacity(0.8)],
+              : [AppColors.textoEscuro, AppColors.textoEscuro.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: _salvando ? Colors.grey.withOpacity(0.3) : rosaTexto.withOpacity(0.3),
+            color: _salvando ? Colors.grey.withOpacity(0.3) : AppColors.textoEscuro.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),

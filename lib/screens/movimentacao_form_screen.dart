@@ -1,4 +1,5 @@
 import 'package:AgendaLuz/database/database_helper.dart';
+import '../utils/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import '../models/movimentacao_financeira.dart';
@@ -83,13 +84,10 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const rosaPrincipal = Color(0xFFD9A7B0);
-    const rosaClaro = Color(0xFFFFF1F3);
-    const rosaTexto = Color(0xFF8A4B57);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: Text(
           _modoEdicao ? 'Editar Movimentação' : 'Nova Movimentação',
@@ -98,7 +96,7 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
-        color: rosaClaro,
+        color: AppColors.rosaClaro,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Form(
@@ -124,14 +122,14 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                     decoration: InputDecoration(
                       labelText: 'Descrição',
                       hintText: 'Digite a descrição da movimentação',
-                      prefixIcon: const Icon(Icons.description, color: rosaTexto),
+                      prefixIcon: const Icon(Icons.description, color: AppColors.textoEscuro),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: rosaPrincipal, width: 2),
+                        borderSide: const BorderSide(color: AppColors.rosaPrincipal, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -165,14 +163,14 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                     decoration: InputDecoration(
                       labelText: 'Valor (R\$)',
                       hintText: 'Digite o valor',
-                      prefixIcon: const Icon(Icons.attach_money, color: rosaTexto),
+                      prefixIcon: const Icon(Icons.attach_money, color: AppColors.textoEscuro),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: rosaPrincipal, width: 2),
+                        borderSide: const BorderSide(color: AppColors.rosaPrincipal, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -202,16 +200,16 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: const Icon(Icons.calendar_today, color: rosaTexto),
+                    leading: const Icon(Icons.calendar_today, color: AppColors.textoEscuro),
                     title: const Text(
                       'Data',
-                      style: TextStyle(color: rosaTexto, fontWeight: FontWeight.w600, fontSize: 16),
+                      style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.w600, fontSize: 16),
                     ),
                     subtitle: Text(
                       '${_data.day.toString().padLeft(2, '0')}/${_data.month.toString().padLeft(2, '0')}/${_data.year}',
                       style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
-                    trailing: const Icon(Icons.chevron_right, color: rosaTexto),
+                    trailing: const Icon(Icons.chevron_right, color: AppColors.textoEscuro),
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
@@ -249,7 +247,7 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                         const Text(
                           'Tipo de Movimentação',
                           style: TextStyle(
-                            color: rosaTexto,
+                            color: AppColors.textoEscuro,
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
                           ),
@@ -345,7 +343,7 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                     gradient: LinearGradient(
                       colors: _salvando
                           ? [Colors.grey, Colors.grey.withOpacity(0.8)]
-                          : [rosaTexto, rosaTexto.withOpacity(0.8)],
+                          : [AppColors.textoEscuro, AppColors.textoEscuro.withOpacity(0.8)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -354,7 +352,7 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                       BoxShadow(
                         color: _salvando
                             ? Colors.grey.withOpacity(0.3)
-                            : rosaTexto.withOpacity(0.3),
+                            : AppColors.textoEscuro.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),

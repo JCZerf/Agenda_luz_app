@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/backup_service.dart';
+import '../utils/app_colors.dart';
 import 'notifications_screen.dart';
 
 class ConfiguracoesScreen extends StatefulWidget {
@@ -14,16 +15,12 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
   final BackupService _backupService = BackupService();
   bool _carregandoBackup = false;
 
-  final rosaPrincipal = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
-  final rosaTexto = const Color(0xFF8A4B57);
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rosaClaro,
+      backgroundColor: AppColors.rosaClaro,
       appBar: AppBar(
-        backgroundColor: rosaPrincipal,
+        backgroundColor: AppColors.rosaPrincipal,
         title: const Text(
           'Configuracoes',
           style: TextStyle(
@@ -61,14 +58,14 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.backup, color: rosaTexto, size: 24),
+                Icon(Icons.backup, color: AppColors.textoEscuro, size: 24),
                 const SizedBox(width: 8),
                 Text(
                   'Backup dos Dados',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: rosaTexto,
+                    color: AppColors.textoEscuro,
                   ),
                 ),
               ],
@@ -77,7 +74,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
             Text(
               'Proteja seus dados criando backups e restaure quando necessário.',
               style: TextStyle(
-                color: rosaTexto.withOpacity(0.7),
+                color: AppColors.rosaTextoComOpacidade(0.7),
                 fontSize: 14,
               ),
             ),
@@ -105,7 +102,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
             : const Icon(Icons.share),
         label: Text(_carregandoBackup ? 'Criando backup...' : 'Criar Backup'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: rosaPrincipal,
+          backgroundColor: AppColors.rosaPrincipal,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -122,8 +119,8 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
         icon: const Icon(Icons.restore),
         label: const Text('Restaurar Backup'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: rosaTexto,
-          side: BorderSide(color: rosaTexto),
+          foregroundColor: AppColors.textoEscuro,
+          side: BorderSide(color: AppColors.textoEscuro),
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -142,14 +139,14 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.notifications, color: rosaTexto, size: 24),
+                Icon(Icons.notifications, color: AppColors.textoEscuro, size: 24),
                 const SizedBox(width: 8),
                 Text(
                   'Notificacoes',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: rosaTexto,
+                    color: AppColors.textoEscuro,
                   ),
                 ),
               ],
@@ -158,7 +155,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
             Text(
               'Gerencie suas notificacoes de atendimentos.',
               style: TextStyle(
-                color: rosaTexto.withOpacity(0.7),
+                color: AppColors.rosaTextoComOpacidade(0.7),
                 fontSize: 14,
               ),
             ),
@@ -176,7 +173,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
                 icon: const Icon(Icons.notifications_active),
                 label: const Text('Gerenciar Notificacoes'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: rosaPrincipal.withOpacity(0.8),
+                  backgroundColor: AppColors.rosaPrincipalComOpacidade(0.8),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -200,21 +197,21 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.info_outline, color: rosaTexto, size: 24),
+                Icon(Icons.info_outline, color: AppColors.textoEscuro, size: 24),
                 const SizedBox(width: 8),
                 Text(
                   'Sobre o App',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: rosaTexto,
+                    color: AppColors.textoEscuro,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            Text('Versao: 1.4.2+17', style: TextStyle(color: rosaTexto)),
-            Text('Desenvolvido por: JCZerf', style: TextStyle(color: rosaTexto)),
+            Text('Versao: 1.4.2+17', style: TextStyle(color: AppColors.textoEscuro)),
+            Text('Desenvolvido por: JCZerf', style: TextStyle(color: AppColors.textoEscuro)),
           ],
         ),
       ),
@@ -401,7 +398,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
               Navigator.of(context).pop(caminho);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: rosaPrincipal,
+              backgroundColor: AppColors.rosaPrincipal,
               foregroundColor: Colors.white,
             ),
             child: const Text('Restaurar'),
@@ -415,7 +412,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(mensagem),
-        backgroundColor: rosaPrincipal,
+        backgroundColor: AppColors.rosaPrincipal,
       ),
     );
   }

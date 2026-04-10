@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../database/database_helper.dart';
 import '../models/servico.dart';
+import '../utils/app_colors.dart';
 
 class ServicoFormScreen extends StatefulWidget {
   const ServicoFormScreen({super.key});
@@ -19,10 +20,6 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
   final tempoController = TextEditingController();
 
   Servico? servicoEdicao;
-
-  final rosaPrincipal = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
-  final rosaTexto = const Color(0xFF8A4B57);
 
   @override
   void didChangeDependencies() {
@@ -107,11 +104,11 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
           children: [
             Row(
               children: [
-                Icon(icone, color: rosaTexto, size: 20),
+                Icon(icone, color: AppColors.textoEscuro, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   titulo,
-                  style: TextStyle(color: rosaTexto, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -137,14 +134,14 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: hintText,
-        prefixIcon: Icon(icone, color: rosaTexto),
+        prefixIcon: Icon(icone, color: AppColors.textoEscuro),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: rosaPrincipal, width: 2),
+          borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
         ),
         filled: true,
         fillColor: Colors.grey[50],
@@ -157,7 +154,7 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: Text(
           servicoEdicao != null ? 'Editar Serviço' : 'Novo Serviço',
@@ -166,7 +163,7 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
-        color: rosaClaro,
+        color: AppColors.rosaClaro,
         child: Form(
           key: _formKey,
           child: ListView(
@@ -272,14 +269,14 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [rosaTexto, rosaTexto.withOpacity(0.8)],
+                    colors: [AppColors.textoEscuro, AppColors.textoEscuro.withOpacity(0.8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: rosaTexto.withOpacity(0.3),
+                      color: AppColors.textoEscuro.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),

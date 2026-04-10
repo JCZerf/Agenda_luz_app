@@ -1,3 +1,4 @@
+import '../utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -79,11 +80,11 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
   @override
   Widget build(BuildContext context) {
     final listaFiltrada = _filtrarPorMes(_movimentacoes);
-    const rosaTexto = Color(0xFF8A4B57);
 
     return Scaffold(
+      backgroundColor: AppColors.rosaFundoGeral,
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         title: const Text(
           'Financeiro',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
@@ -91,54 +92,128 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.dashboard, color: Colors.white),
+            onPressed: () {
+              Navigator.pushNamed(context, '/dashboard_financeiro');
+            },
+            tooltip: 'Dashboard',
+          ),
+        ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          // Header com seletor de mês
+          Container(
+            color: Colors.white,
+            child: Column(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left, color: rosaTexto),
-                  onPressed: () => _mudarMes(-1),
-                ),
-                Text(
-                  toBeginningOfSentenceCase(
-                    DateFormat('MMMM \'de\' y', 'pt_BR').format(_mesAtual),
-                  )!,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: rosaTexto,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left, color: AppColors.textoEscuro),
+                        onPressed: () => _mudarMes(-1),
+                      ),
+                      Text(
+                        toBeginningOfSentenceCase(
+                          DateFormat('MMMM \'de\' y', 'pt_BR').format(_mesAtual),
+                        )!,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textoEscuro,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right, color: AppColors.textoEscuro),
+                        onPressed: () => _mudarMes(1),
+                      ),
+                    ],
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right, color: rosaTexto),
-                  onPressed: () => _mudarMes(1),
                 ),
               ],
             ),
           ),
-          _ResumoFinanceiroCard(movimentacoes: listaFiltrada, previsaoReceita: _previsaoReceita),
+          
           const SizedBox(height: 16),
+          
+          // Card de resumo melhorado
+          _ResumoFinanceiroCard(movimentacoes: listaFiltrada, previsaoReceita: _previsaoReceita),
+          
+          const SizedBox(height: 16),
+          
+          // Header da lista
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Movimentações',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textoEscuro,
+                  ),
+                ),
+                Text(
+                  '${listaFiltrada.length} ${listaFiltrada.length == 1 ? 'item' : 'itens'}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
           Expanded(
             child: listaFiltrada.isEmpty
-                ? const Center(child: Text('Nenhuma movimentação encontrada.'))
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.receipt_long,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Nenhuma movimentação encontrada',
+                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Adicione receitas ou despesas',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  )
                 : ListView.separated(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
                     itemCount: listaFiltrada.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final m = listaFiltrada[index];
                       final cor = m.isReceita ? Colors.green[700]! : Colors.red[700]!;
+                      final corFundo = m.isReceita ? Colors.green[50]! : Colors.red[50]!;
+                      final icone = m.isReceita ? Icons.add_circle : Icons.remove_circle;
                       final data = DateFormat('dd/MM/yyyy').format(m.data);
 
                       final card = Card(
                         color: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 2,
-                        child: ListTile(
+                        elevation: 1,
+                        margin: EdgeInsets.zero,
+                        child: InkWell(
                           onTap: m.origem == 'manual'
                               ? () async {
                                   final resultado = await Navigator.pushNamed(
@@ -152,21 +227,87 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                                   }
                                 }
                               : null,
-                          title: Text(
-                            m.descricao,
-                            style: const TextStyle(
-                              color: rosaTexto,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: corFundo,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(icone, color: cor, size: 24),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        m.descricao,
+                                        style: const TextStyle(
+                                          color: AppColors.textoEscuro,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today,
+                                            size: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            data,
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: m.origem == 'manual'
+                                                  ? Colors.blue[50]
+                                                  : Colors.purple[50],
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              m.origem,
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: m.origem == 'manual'
+                                                    ? Colors.blue[700]
+                                                    : Colors.purple[700],
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${m.isReceita ? '+' : '-'}R\$ ${m.valor.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: cor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          subtitle: Text(
-                            '$data • ${m.origem}',
-                            style: const TextStyle(color: rosaTexto),
-                          ),
-                          trailing: Text(
-                            '${m.isReceita ? '+' : '-'}R\$ ${m.valor.toStringAsFixed(2)}',
-                            style: TextStyle(color: cor, fontWeight: FontWeight.w600),
                           ),
                         ),
                       );
@@ -178,8 +319,24 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
                           background: Container(
                             padding: const EdgeInsets.only(right: 20),
                             alignment: Alignment.centerRight,
-                            color: Colors.red,
-                            child: const Icon(Icons.delete, color: Colors.white),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.delete, color: Colors.white, size: 28),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Excluir',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           confirmDismiss: (_) => _confirmarExclusao(m),
                           child: card,
@@ -192,7 +349,7 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final resultado = await Navigator.pushNamed(context, '/nova_movimentacao');
           if (resultado == true) {
@@ -200,8 +357,9 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
             await _carregarPrevisaoReceita();
           }
         },
-        backgroundColor: rosaTexto,
-        child: const Icon(Icons.attach_money, color: Colors.white),
+        backgroundColor: AppColors.textoEscuro,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Nova Movimentação', style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -219,75 +377,118 @@ class _ResumoFinanceiroCard extends StatelessWidget {
     final despesaTotal = movimentacoes.where((m) => !m.isReceita).fold(0.0, (s, m) => s + m.valor);
     final saldo = receitaTotal - despesaTotal;
 
-    const rosaTexto = Color(0xFF8A4B57);
-
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.rosaPrincipal, AppColors.rosaMedio],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.rosaPrincipal.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _ResumoItem(label: 'Receita', valor: receitaTotal, cor: Colors.green[700]!),
-            _ResumoItem(label: 'Despesas', valor: despesaTotal, cor: Colors.red[700]!),
-            const Divider(),
-            _ResumoItem(label: 'Saldo Líquido', valor: saldo, cor: rosaTexto, destaque: true),
-            if (previsaoReceita > 0) ...[
-              const SizedBox(height: 8),
-              _ResumoItem(
-                label: 'Previsão de Receita',
-                valor: previsaoReceita,
-                cor: Colors.blue[700]!,
-                destaque: false,
-                icone: Icons.trending_up,
-              ),
-            ],
+            // Saldo principal - compacto
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Saldo do Mês',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  'R\$ ${saldo.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            const Divider(color: Colors.white38, height: 1),
+            const SizedBox(height: 12),
+            
+            // Receitas, Despesas e Previsão em linha
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildResumoItemCompact(
+                  'Receitas',
+                  receitaTotal,
+                  Icons.arrow_upward,
+                  Colors.green[300]!,
+                ),
+                Container(
+                  width: 1,
+                  height: 35,
+                  color: Colors.white38,
+                ),
+                _buildResumoItemCompact(
+                  'Despesas',
+                  despesaTotal,
+                  Icons.arrow_downward,
+                  Colors.red[300]!,
+                ),
+                if (previsaoReceita > 0) ...[
+                  Container(
+                    width: 1,
+                    height: 35,
+                    color: Colors.white38,
+                  ),
+                  _buildResumoItemCompact(
+                    'Previsão',
+                    previsaoReceita,
+                    Icons.schedule,
+                    Colors.amber[300]!,
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-class _ResumoItem extends StatelessWidget {
-  final String label;
-  final double valor;
-  final Color cor;
-  final bool destaque;
-  final IconData? icone;
-
-  const _ResumoItem({
-    required this.label,
-    required this.valor,
-    required this.cor,
-    this.destaque = false,
-    this.icone,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final estilo = TextStyle(
-      fontSize: destaque ? 18 : 16,
-      fontWeight: destaque ? FontWeight.bold : FontWeight.normal,
-      color: cor,
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              if (icone != null) ...[Icon(icone, color: cor, size: 20), const SizedBox(width: 8)],
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-            ],
+  Widget _buildResumoItemCompact(String label, double valor, IconData icone, Color cor) {
+    return Column(
+      children: [
+        Icon(icone, color: cor, size: 18),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 10,
           ),
-          Text('R\$ ${valor.toStringAsFixed(2)}', style: estilo),
-        ],
-      ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'R\$ ${valor.toStringAsFixed(0)}',
+          style: TextStyle(
+            color: cor,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,6 +3,8 @@ import 'package:AgendaLuz/models/atendimento.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../utils/app_colors.dart';
+
 class AgendaScreen extends StatefulWidget {
   const AgendaScreen({super.key});
 
@@ -12,7 +14,7 @@ class AgendaScreen extends StatefulWidget {
 
 class _AgendaScreenState extends State<AgendaScreen> {
   int _abaSelecionada = 0;
-  DateTime _dataSelecionada = DateTime.now();
+  DateTime _mesSelecionado = DateTime(DateTime.now().year, DateTime.now().month);
 
   final List<String> opcoes = ['Diário', 'Semanal', 'Mensal'];
   List<Map<String, dynamic>> _todos = [];
@@ -77,14 +79,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   List<Map<String, dynamic>> _filtrar() {
-    final agora = _dataSelecionada;
+    final hoje = DateTime.now();
     if (_abaSelecionada == 0) {
       return _todos.where((a) {
         final data = DateTime.parse(a['data_hora']);
-        return data.year == agora.year && data.month == agora.month && data.day == agora.day;
+        return data.year == hoje.year && data.month == hoje.month && data.day == hoje.day;
       }).toList();
     } else if (_abaSelecionada == 1) {
-      final inicioSemana = agora.subtract(Duration(days: agora.weekday - 1));
+      final inicioSemana = hoje.subtract(Duration(days: hoje.weekday - 1));
       final fimSemana = inicioSemana.add(const Duration(days: 6));
       return _todos.where((a) {
         final data = DateTime.parse(a['data_hora']);
@@ -94,13 +96,100 @@ class _AgendaScreenState extends State<AgendaScreen> {
     } else {
       return _todos.where((a) {
         final data = DateTime.parse(a['data_hora']);
-        return data.year == agora.year && data.month == agora.month;
+        return data.year == _mesSelecionado.year && data.month == _mesSelecionado.month;
       }).toList();
     }
   }
 
-  bool _mesmoDia(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+  bool _mesmoMes(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month;
+  }
+
+  String _nomeMes(int mes) {
+    final nome = DateFormat('MMMM', 'pt_BR').format(DateTime(2000, mes));
+    return toBeginningOfSentenceCase(nome) ?? nome;
+  }
+
+  Future<void> _selecionarMesAno() async {
+    int mesSelecionadoTemp = _mesSelecionado.month;
+    int anoSelecionadoTemp = _mesSelecionado.year;
+    final anoAtual = DateTime.now().year;
+    final anosDisponiveis = List<int>.generate((anoAtual + 5) - 2020 + 1, (i) => 2020 + i)
+        .reversed
+        .toList();
+
+    final DateTime? dataSelecionada = await showDialog<DateTime>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Selecionar mês e ano'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                value: mesSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Mês',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(12, (index) {
+                  final mes = index + 1;
+                  return DropdownMenuItem<int>(
+                    value: mes,
+                    child: Text(_nomeMes(mes)),
+                  );
+                }),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => mesSelecionadoTemp = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: anoSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Ano',
+                  border: OutlineInputBorder(),
+                ),
+                items: anosDisponiveis
+                    .map(
+                      (ano) => DropdownMenuItem<int>(
+                        value: ano,
+                        child: Text(ano.toString()),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => anoSelecionadoTemp = value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(
+                context,
+                DateTime(anoSelecionadoTemp, mesSelecionadoTemp),
+              ),
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (dataSelecionada != null) {
+      setState(() {
+        _mesSelecionado = DateTime(dataSelecionada.year, dataSelecionada.month);
+      });
+    }
   }
 
   void _mostrarDetalhes(BuildContext context, Map<String, dynamic> a) {
@@ -372,8 +461,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   void _mostrarCriarAgendamento() async {
-    const rosaTexto = Color(0xFF8A4B57);
-
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -394,7 +481,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 icon: const Icon(Icons.person),
                 label: const Text('Com cliente cadastrada'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: rosaTexto,
+                  backgroundColor: AppColors.textoEscuro,
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
@@ -411,7 +498,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 icon: const Icon(Icons.person_off),
                 label: const Text('Sem cadastro de cliente'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: rosaTexto,
+                  backgroundColor: AppColors.textoEscuro,
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
@@ -432,79 +519,113 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const rosaClaro = Color(0xFFFFF1F3);
-    const rosaPrincipal = Color(0xFFD9A7B0);
-    const rosaTexto = Color(0xFF8A4B57);
+    final hoje = DateTime.now();
+    final subtitulo = _abaSelecionada == 2
+        ? toBeginningOfSentenceCase(DateFormat("MMMM 'de' yyyy", 'pt_BR').format(_mesSelecionado))
+        : DateFormat('dd/MM/yyyy').format(hoje);
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: rosaTexto,
-        elevation: 0,
-        title: Row(
-          children: [
-            const Icon(Icons.calendar_today, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Agenda',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                Text(
-                  DateFormat('dd/MM/yyyy').format(_dataSelecionada),
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(100),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.rosaEscuro, AppColors.rosaPrincipal],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_month_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'AgendaLuz',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                subtitulo,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.settings, color: Colors.white, size: 22),
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/configuracoes');
+                              },
+                              tooltip: 'Configurações',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.calendar_month, color: Colors.white, size: 22),
+                              onPressed: _selecionarMesAno,
+                              tooltip: 'Selecionar mês/ano',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
+          ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              Navigator.pushNamed(context, '/configuracoes');
-            },
-            tooltip: 'Configurações',
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.date_range, color: Colors.white),
-              onPressed: () async {
-                final selecionada = await showDatePicker(
-                  context: context,
-                  initialDate: _dataSelecionada,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2100),
-                );
-                if (selecionada != null) {
-                  setState(() {
-                    _dataSelecionada = selecionada;
-                  });
-                }
-              },
-            ),
-          ),
-        ],
       ),
-
       body: Column(
         children: [
           Column(
             children: [
               Container(
-                color: rosaClaro,
+                color: AppColors.rosaClaro,
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -516,13 +637,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
-                          color: selecionado ? rosaTexto : Colors.white,
+                          color: selecionado ? AppColors.textoEscuro : Colors.white,
                           borderRadius: BorderRadius.circular(25),
-                          border: Border.all(color: rosaTexto, width: 2),
+                          border: Border.all(color: AppColors.textoEscuro, width: 2),
                           boxShadow: selecionado
                               ? [
                                   BoxShadow(
-                                    color: rosaTexto.withOpacity(0.3),
+                                    color: AppColors.textoEscuro.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -538,7 +659,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                   : index == 1
                                   ? Icons.view_week
                                   : Icons.calendar_month,
-                              color: selecionado ? Colors.white : rosaTexto,
+                              color: selecionado ? Colors.white : AppColors.textoEscuro,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
@@ -546,7 +667,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                               opcoes[index],
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: selecionado ? Colors.white : rosaTexto,
+                                color: selecionado ? Colors.white : AppColors.textoEscuro,
                                 fontSize: 14,
                               ),
                             ),
@@ -557,29 +678,28 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   }),
                 ),
               ),
-              if (!_mesmoDia(_dataSelecionada, DateTime.now()))
+              if (_abaSelecionada == 2 && !_mesmoMes(_mesSelecionado, DateTime.now()))
                 Container(
-                  color: rosaClaro,
+                  color: AppColors.rosaClaro,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Center(
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: rosaTexto.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.textoEscuro.withOpacity(0.3)),
                       ),
                       child: TextButton.icon(
                         onPressed: () {
                           setState(() {
-                            _dataSelecionada = DateTime.now();
-                            _abaSelecionada = 0;
+                            _mesSelecionado = DateTime(hoje.year, hoje.month);
                           });
                         },
-                        icon: const Icon(Icons.today, color: rosaTexto, size: 18),
+                        icon: const Icon(Icons.calendar_today, color: AppColors.textoEscuro, size: 18),
                         label: const Text(
-                          'Voltar para Hoje',
+                          'Voltar para Mês Atual',
                           style: TextStyle(
-                            color: rosaTexto,
+                            color: AppColors.textoEscuro,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -593,7 +713,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
           Expanded(
             child: Container(
-              color: rosaClaro,
+              color: AppColors.rosaClaro,
               child: _filtrar().isEmpty
                   ? Center(
                       child: Column(
@@ -700,16 +820,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                       decoration: BoxDecoration(
                                         color: statusConcluido
                                             ? Colors.green[50]
-                                            : rosaPrincipal.withOpacity(0.1),
+                                            : AppColors.rosaPrincipal.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(25),
                                         border: Border.all(
-                                          color: statusConcluido ? Colors.green : rosaPrincipal,
+                                          color: statusConcluido ? Colors.green : AppColors.rosaPrincipal,
                                           width: 2,
                                         ),
                                       ),
                                       child: Icon(
                                         statusConcluido ? Icons.check_circle : Icons.favorite,
-                                        color: statusConcluido ? Colors.green : rosaPrincipal,
+                                        color: statusConcluido ? Colors.green : AppColors.rosaPrincipal,
                                         size: 24,
                                       ),
                                     ),
@@ -724,7 +844,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
-                                              color: rosaTexto,
+                                              color: AppColors.textoEscuro,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -751,7 +871,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                                     Text(
                                                       diaSemana,
                                                       style: const TextStyle(
-                                                        color: rosaTexto,
+                                                        color: AppColors.textoEscuro,
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w500,
                                                       ),
@@ -849,7 +969,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                             ),
                                           ),
                                         const SizedBox(height: 8),
-                                        const Icon(Icons.more_vert, color: rosaTexto, size: 20),
+                                        const Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
                                       ],
                                     ),
                                   ],
@@ -869,7 +989,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: rosaTexto.withOpacity(0.4),
+              color: AppColors.textoEscuro.withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -877,7 +997,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
         ),
         child: FloatingActionButton(
           onPressed: _mostrarCriarAgendamento,
-          backgroundColor: rosaTexto,
+          backgroundColor: AppColors.textoEscuro,
           shape: const CircleBorder(),
           tooltip: 'Novo Agendamento',
           elevation: 0,

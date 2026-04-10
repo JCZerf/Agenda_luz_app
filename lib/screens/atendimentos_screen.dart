@@ -1,4 +1,5 @@
 import 'package:AgendaLuz/database/database_helper.dart';
+import '../utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -87,22 +88,91 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
     }
   }
 
+  String _nomeMes(int mes) {
+    final nome = DateFormat('MMMM', 'pt_BR').format(DateTime(2000, mes));
+    return toBeginningOfSentenceCase(nome) ?? nome;
+  }
+
   void _selecionarMes() async {
-    final DateTime? dataSelecionada = await showDatePicker(
+    int mesSelecionadoTemp = _mesSelecionado.month;
+    int anoSelecionadoTemp = _mesSelecionado.year;
+    final anoAtual = DateTime.now().year;
+    final anosDisponiveis = List<int>.generate((anoAtual + 5) - 2020 + 1, (i) => 2020 + i)
+        .reversed
+        .toList();
+
+    final DateTime? dataSelecionada = await showDialog<DateTime>(
       context: context,
-      initialDate: _mesSelecionado,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      helpText: 'Selecione o mês',
-      fieldLabelText: 'Mês',
-      locale: const Locale('pt', 'BR'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Selecionar mês e ano'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                value: mesSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Mês',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(12, (index) {
+                  final mes = index + 1;
+                  return DropdownMenuItem<int>(
+                    value: mes,
+                    child: Text(_nomeMes(mes)),
+                  );
+                }),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => mesSelecionadoTemp = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: anoSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Ano',
+                  border: OutlineInputBorder(),
+                ),
+                items: anosDisponiveis
+                    .map(
+                      (ano) => DropdownMenuItem<int>(
+                        value: ano,
+                        child: Text(ano.toString()),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => anoSelecionadoTemp = value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(
+                context,
+                DateTime(anoSelecionadoTemp, mesSelecionadoTemp),
+              ),
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
     );
 
     if (dataSelecionada != null) {
       setState(() {
-        _mesSelecionado = dataSelecionada;
-        _filtrarAtendimentos();
+        _mesSelecionado = DateTime(dataSelecionada.year, dataSelecionada.month);
       });
+      _filtrarAtendimentos();
     }
   }
 
@@ -273,13 +343,10 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const rosaPrincipal = Color(0xFFD9A7B0);
-    const rosaClaro = Color(0xFFFFF1F3);
-    const rosaTexto = Color(0xFF8A4B57);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rosaTexto,
+        backgroundColor: AppColors.textoEscuro,
         elevation: 0,
         title: const Text('Atendimentos', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -292,7 +359,7 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
         ],
       ),
       body: Container(
-        color: rosaClaro,
+        color: AppColors.rosaClaro,
         child: Column(
           children: [
             // Filtros
@@ -307,14 +374,14 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                   // Seletor de mês
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, color: rosaTexto),
+                      const Icon(Icons.calendar_today, color: AppColors.textoEscuro),
                       const SizedBox(width: 8),
                       Text(
                         'Mês: ${DateFormat('MMMM yyyy', 'pt_BR').format(_mesSelecionado)}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: rosaTexto,
+                          color: AppColors.textoEscuro,
                         ),
                       ),
                       const Spacer(),
@@ -331,14 +398,14 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                     controller: _controladorBusca,
                     decoration: InputDecoration(
                       hintText: 'Buscar por nome do cliente...',
-                      prefixIcon: const Icon(Icons.search, color: rosaTexto),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.textoEscuro),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: rosaPrincipal),
+                        borderSide: const BorderSide(color: AppColors.rosaPrincipal),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: rosaTexto),
+                        borderSide: const BorderSide(color: AppColors.textoEscuro),
                       ),
                       filled: true,
                       fillColor: Colors.grey[50],
@@ -368,15 +435,15 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
             // Informações do filtro
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: rosaPrincipal.withOpacity(0.1),
+              color: AppColors.rosaPrincipal.withOpacity(0.1),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 16, color: rosaTexto),
+                  const Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '${_atendimentosFiltrados.length} atendimento(s) concluído(s)',
-                      style: const TextStyle(fontSize: 12, color: rosaTexto),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textoEscuro),
                     ),
                   ),
                   Container(
@@ -463,19 +530,19 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                                 contentPadding: const EdgeInsets.all(16),
                                 leading: Icon(
                                   autoConcluido ? Icons.schedule : Icons.check_circle,
-                                  color: autoConcluido ? Colors.orange : rosaPrincipal,
+                                  color: autoConcluido ? Colors.orange : AppColors.rosaPrincipal,
                                 ),
                                 title: Text(
                                   nome,
                                   style: const TextStyle(
-                                    color: rosaTexto,
+                                    color: AppColors.textoEscuro,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Data: $data', style: const TextStyle(color: rosaTexto)),
+                                    Text('Data: $data', style: const TextStyle(color: AppColors.textoEscuro)),
                                     Text(
                                       'Valor: R\$ ${valor.toStringAsFixed(2)}',
                                       style: TextStyle(
@@ -507,7 +574,7 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                                     ],
                                   ],
                                 ),
-                                trailing: const Icon(Icons.more_vert, color: rosaTexto),
+                                trailing: const Icon(Icons.more_vert, color: AppColors.textoEscuro),
                               ),
                             ),
                           );

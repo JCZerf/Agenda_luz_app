@@ -1,6 +1,7 @@
 import 'package:AgendaLuz/utils/developerSignature.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/app_colors.dart';
 import 'agenda_screen.dart';
 import 'atendimentos_screen.dart';
 import 'clientes_screen.dart';
@@ -16,10 +17,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-
-  final rosaPrincipal = const Color(0xFFD9A7B0);
-  final rosaClaro = const Color(0xFFFFF1F3);
-  final rosaTexto = const Color(0xFF8A4B57);
 
   final List<Widget> _telas = const [
     AgendaScreen(),
@@ -40,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: rosaClaro,
+      backgroundColor: AppColors.rosaClaro,
       body: SafeArea(
         child: Column(
           children: [
@@ -71,8 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
             backgroundColor: Colors.white,
-            selectedItemColor: rosaTexto,
-            unselectedItemColor: rosaTexto.withOpacity(0.5),
+            selectedItemColor: AppColors.textoEscuro,
+            unselectedItemColor: AppColors.textoEscuro.withOpacity(0.5),
             selectedFontSize: 12,
             unselectedFontSize: 10,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
