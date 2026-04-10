@@ -72,6 +72,13 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
     });
   }
 
+  double _calcularTotal() {
+    return _atendimentosFiltrados.fold(0.0, (total, atendimento) {
+      final valor = (atendimento['valor'] as num).toDouble();
+      return total + valor;
+    });
+  }
+
   Future<void> _atualizarAtendimentoNoBanco(Atendimento atendimento) async {
     try {
       await DatabaseHelper().atualizarAtendimento(atendimento);
@@ -366,9 +373,34 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                 children: [
                   const Icon(Icons.info_outline, size: 16, color: rosaTexto),
                   const SizedBox(width: 8),
-                  Text(
-                    '${_atendimentosFiltrados.length} atendimento(s) concluído(s)',
-                    style: const TextStyle(fontSize: 12, color: rosaTexto),
+                  Expanded(
+                    child: Text(
+                      '${_atendimentosFiltrados.length} atendimento(s) concluído(s)',
+                      style: const TextStyle(fontSize: 12, color: rosaTexto),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.attach_money, size: 16, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Total: R\$ ${_calcularTotal().toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

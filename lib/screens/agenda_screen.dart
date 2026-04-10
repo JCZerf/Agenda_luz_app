@@ -467,11 +467,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.white),
+            icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamed(context, '/notifications');
+              Navigator.pushNamed(context, '/configuracoes');
             },
-            tooltip: 'Notificações',
+            tooltip: 'Configurações',
           ),
           Container(
             margin: const EdgeInsets.only(right: 8),
@@ -626,6 +626,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       children: _filtrar().map((a) {
                         final data = DateTime.parse(a['data_hora']);
                         final formatada = DateFormat('dd/MM/yyyy HH:mm').format(data);
+                        final diaSemana = DateFormat('EEEE', 'pt_BR').format(data);
                         final nome = a['nome_cliente'] ?? a['nome_livre'] ?? 'Sem cadastro';
                         final valor = (a['valor'] as num).toDouble();
                         final concluido = a['concluido'] == 1;
@@ -736,11 +737,26 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                                 color: Colors.grey[600],
                                               ),
                                               const SizedBox(width: 4),
-                                              Text(
-                                                formatada,
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 14,
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      formatada,
+                                                      style: TextStyle(
+                                                        color: Colors.grey[600],
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      diaSemana,
+                                                      style: const TextStyle(
+                                                        color: rosaTexto,
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ],

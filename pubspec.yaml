@@ -1,7 +1,7 @@
 name: AgendaLuz
 description: "Aplicativo de agendamento e controle financeiro para profissionais autônomos."
 publish_to: 'none'
-version: 1.3.3+8
+version: 1.4.2+17
 
 environment:
   sdk: ^3.8.1
@@ -19,6 +19,8 @@ dependencies:
   flutter_native_splash: ^2.4.6
   package_info_plus: ^8.3.0
   timezone: ^0.9.4
+  path_provider: ^2.1.0
+  share_plus: ^7.2.0
 
 
 dev_dependencies:

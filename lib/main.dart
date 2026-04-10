@@ -3,12 +3,14 @@ import 'package:AgendaLuz/screens/movimentacao_form_screen.dart';
 import 'package:AgendaLuz/screens/notifications_screen.dart';
 import 'package:AgendaLuz/screens/servico_form_screen.dart';
 import 'package:AgendaLuz/services/notification_service.dart';
+import 'package:AgendaLuz/services/backup_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'screens/agendamento_form_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/configuracoes_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +21,15 @@ void main() async {
   } catch (e) {
     // Se falhar, continua sem notificações
     print('Erro ao inicializar notificações: $e');
+  }
+
+  // Fazer backup automático na inicialização
+  try {
+    final backupService = BackupService();
+    await backupService.fazerBackupAutomatico();
+    print('Backup automático realizado com sucesso');
+  } catch (e) {
+    print('Erro ao fazer backup automático: $e');
   }
 
   await initializeDateFormatting('pt_BR', null);
@@ -102,6 +113,7 @@ class AgendALuzApp extends StatelessWidget {
         '/nova_movimentacao': (context) => const MovimentacaoFormScreen(),
         '/servico_form': (context) => const ServicoFormScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        '/configuracoes': (context) => const ConfiguracoesScreen(),
       },
     );
   }
