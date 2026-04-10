@@ -59,13 +59,18 @@ class _ClientesScreenState extends State<ClientesScreen> {
   }
 
   Future<Map<String, dynamic>> _obterTagCliente(Cliente cliente) async {
+    // Busca o próximo agendamento futuro
+    final proximoAgendamento = await DatabaseHelper().buscarProximoAgendamento(cliente.id!);
+    final temAgendamento = proximoAgendamento != null;
+    
     // Busca o último atendimento CONCLUÍDO do cliente
     final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
     
     if (ultimoAtendimento == null) {
       return {
         'texto': 'Sem histórico de atendimento', 
-        'dias': null, 
+        'dias': null,
+        'temAgendamento': temAgendamento,
         'cor': AppColors.rosaPrincipal, 
         'corFundo': AppColors.rosaPrincipal.withOpacity(0.1)
       };
@@ -86,6 +91,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
     return {
       'texto': texto,
       'dias': diasAtras,
+      'temAgendamento': temAgendamento,
       'cor': AppColors.rosaPrincipal,
       'corFundo': AppColors.rosaPrincipal.withOpacity(0.1)
     };
@@ -203,9 +209,16 @@ class _ClientesScreenState extends State<ClientesScreen> {
     // Buscar o último atendimento concluído
     final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
     
+    // Buscar o próximo agendamento
+    final proximoAgendamento = await DatabaseHelper().buscarProximoAgendamento(cliente.id!);
+    
     final textoUltimoAtendimento = ultimoAtendimento != null
         ? DateFormat('dd/MM/yyyy – HH:mm').format(ultimoAtendimento)
         : 'Sem histórico de atendimento';
+    
+    final textoProximoAgendamento = proximoAgendamento != null
+        ? DateFormat('dd/MM/yyyy – HH:mm').format(proximoAgendamento)
+        : null;
     
     if (!mounted) return;
     
@@ -288,6 +301,16 @@ class _ClientesScreenState extends State<ClientesScreen> {
                       'Último atendimento',
                       textoUltimoAtendimento,
                     ),
+                    
+                    if (textoProximoAgendamento != null) ...[
+                      const SizedBox(height: 12),
+                      _buildInfoCard(
+                        Icons.event_available,
+                        'Próximo agendamento',
+                        textoProximoAgendamento,
+                        corDestaque: Colors.green,
+                      ),
+                    ],
                     
                     if ((cliente.observacoes?.trim().isNotEmpty ?? false)) ...[
                       const SizedBox(height: 12),
@@ -411,17 +434,19 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
-  Widget _buildInfoCard(IconData icone, String titulo, String valor, {VoidCallback? onTap}) {
+  Widget _buildInfoCard(IconData icone, String titulo, String valor, {VoidCallback? onTap, Color? corDestaque}) {
+    final cor = corDestaque ?? AppColors.rosaPrincipal;
+    
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.rosaClaro,
+          color: corDestaque != null ? cor.withOpacity(0.05) : AppColors.rosaClaro,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.rosaPrincipal.withOpacity(0.3),
+            color: cor.withOpacity(0.3),
             width: 1,
           ),
         ),
@@ -431,12 +456,12 @@ class _ClientesScreenState extends State<ClientesScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.rosaPrincipal.withOpacity(0.2),
+                color: cor.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icone,
-                color: AppColors.rosaPrincipal,
+                color: cor,
                 size: 20,
               ),
             ),
@@ -468,7 +493,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
             if (onTap != null)
               Icon(
                 Icons.chevron_right,
-                color: AppColors.rosaPrincipal,
+                color: corDestaque ?? AppColors.rosaPrincipal,
               ),
           ],
         ),
@@ -701,24 +726,52 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                               }
                                               
                                               final tag = snapshot.data!;
-                                              return Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 3,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: tag['corFundo'],
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  border: Border.all(color: tag['cor'], width: 1),
-                                                ),
-                                                child: Text(
-                                                  tag['texto'],
-                                                  style: TextStyle(
-                                                    color: tag['cor'],
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
+                                              final temAgendamento = tag['temAgendamento'] as bool;
+                                              
+                                              return Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 3,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: tag['corFundo'],
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      border: Border.all(color: tag['cor'], width: 1),
+                                                    ),
+                                                    child: Text(
+                                                      tag['texto'],
+                                                      style: TextStyle(
+                                                        color: tag['cor'],
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
                                                   ),
-                                                ),
+                                                  if (temAgendamento) ...[
+                                                    const SizedBox(width: 6),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 3,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.green.withOpacity(0.1),
+                                                        borderRadius: BorderRadius.circular(12),
+                                                        border: Border.all(color: Colors.green, width: 1),
+                                                      ),
+                                                      child: const Text(
+                                                        'Agendado',
+                                                        style: TextStyle(
+                                                          color: Colors.green,
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
                                               );
                                             },
                                           ),

@@ -331,6 +331,30 @@ class DatabaseHelper {
     }
   }
 
+  // Buscar próximo agendamento futuro do cliente
+  Future<DateTime?> buscarProximoAgendamento(int clienteId) async {
+    final dbClient = await db;
+    final agora = DateTime.now().toIso8601String();
+    final resultado = await dbClient.query(
+      'atendimentos',
+      where: 'cliente_id = ? AND concluido = 0 AND data_hora >= ?',
+      whereArgs: [clienteId, agora],
+      orderBy: 'data_hora ASC',
+      limit: 1,
+    );
+    
+    if (resultado.isEmpty) {
+      return null;
+    }
+    
+    try {
+      final dataHoraStr = resultado.first['data_hora'] as String;
+      return DateTime.parse(dataHoraStr);
+    } catch (e) {
+      return null;
+    }
+  }
+
   // ===================== CRUD Movimentações =====================
 
   Future<int> inserirMovimentacao(MovimentacaoFinanceira m) async {
