@@ -496,4 +496,142 @@ class DatabaseHelper {
       'mes': mes,
     };
   }
+
+  // ===================== Estatísticas Financeiras para Dashboard =====================
+
+  Future<Map<String, dynamic>> obterEstatisticasFinanceiras(DateTime mes) async {
+    final dbClient = await db;
+    
+    // Definir o intervalo do mês atual
+    final inicioMes = DateTime(mes.year, mes.month, 1);
+    final fimMes = DateTime(mes.year, mes.month + 1, 0, 23, 59, 59);
+    final inicioMesStr = inicioMes.toIso8601String();
+    final fimMesStr = fimMes.toIso8601String();
+    
+    // Mês anterior para comparação
+    final mesAnterior = DateTime(mes.year, mes.month - 1, 1);
+    final inicioMesAnterior = DateTime(mesAnterior.year, mesAnterior.month, 1);
+    final fimMesAnterior = DateTime(mesAnterior.year, mesAnterior.month + 1, 0, 23, 59, 59);
+    final inicioMesAnteriorStr = inicioMesAnterior.toIso8601String();
+    final fimMesAnteriorStr = fimMesAnterior.toIso8601String();
+    
+    // 1. Calcular receitas e despesas do mês atual
+    final movimentacoes = await dbClient.query(
+      'movimentacoes_financeiras',
+      where: 'data >= ? AND data <= ?',
+      whereArgs: [inicioMesStr, fimMesStr],
+    );
+    
+    double receita = 0.0;
+    double despesa = 0.0;
+    
+    for (final mov in movimentacoes) {
+      final valor = (mov['valor'] is int) 
+          ? (mov['valor'] as int).toDouble() 
+          : mov['valor'] as double;
+      if (mov['tipo'] == 'receita') {
+        receita += valor;
+      } else {
+        despesa += valor;
+      }
+    }
+    
+    // 2. Calcular receita do mês anterior
+    final movimentacoesAnterior = await dbClient.query(
+      'movimentacoes_financeiras',
+      where: 'data >= ? AND data <= ? AND tipo = ?',
+      whereArgs: [inicioMesAnteriorStr, fimMesAnteriorStr, 'receita'],
+    );
+    
+    double receitaMesAnterior = 0.0;
+    for (final mov in movimentacoesAnterior) {
+      final valor = (mov['valor'] is int) 
+          ? (mov['valor'] as int).toDouble() 
+          : mov['valor'] as double;
+      receitaMesAnterior += valor;
+    }
+    
+    // 3. Calcular atendimentos
+    final atendimentos = await dbClient.query(
+      'atendimentos',
+      where: 'data_hora >= ? AND data_hora <= ?',
+      whereArgs: [inicioMesStr, fimMesStr],
+    );
+    
+    final atendimentosAnterior = await dbClient.query(
+      'atendimentos',
+      where: 'data_hora >= ? AND data_hora <= ?',
+      whereArgs: [inicioMesAnteriorStr, fimMesAnteriorStr],
+    );
+    
+    int totalAtendimentos = atendimentos.length;
+    int atendimentosConcluidos = atendimentos.where((a) => a['concluido'] == 1).length;
+    int atendimentosPendentes = totalAtendimentos - atendimentosConcluidos;
+    int atendimentosMesAnterior = atendimentosAnterior.length;
+    
+    // 4. Clientes únicos atendidos
+    final clientesAtendidos = <int>{};
+    for (final atendimento in atendimentos) {
+      final clienteId = atendimento['cliente_id'];
+      if (clienteId != null) {
+        clientesAtendidos.add(clienteId as int);
+      }
+    }
+    
+    // 5. Ticket médio
+    double ticketMedio = totalAtendimentos > 0 ? receita / totalAtendimentos : 0.0;
+    
+    // 6. Taxa de conclusão
+    double taxaConclusao = totalAtendimentos > 0 
+        ? (atendimentosConcluidos / totalAtendimentos) * 100 
+        : 0.0;
+    
+    // 7. Média diária de receita
+    final diasNoMes = fimMes.day;
+    double mediaDiariaReceita = receita / diasNoMes;
+    
+    // 8. Top 5 serviços mais realizados
+    final atendimentosConcuidosComServico = await dbClient.rawQuery(
+      '''
+      SELECT s.nome, COUNT(*) as quantidade, SUM(a.valor) as receita_total
+      FROM atendimentos a
+      LEFT JOIN servicos s ON a.servico_id = s.id
+      WHERE a.data_hora >= ? AND a.data_hora <= ? AND a.concluido = 1
+      GROUP BY a.servico_id, s.nome
+      ORDER BY quantidade DESC
+      LIMIT 5
+      ''',
+      [inicioMesStr, fimMesStr],
+    );
+    
+    final topServicos = atendimentosConcuidosComServico.map((row) {
+      return {
+        'nome': row['nome'] ?? 'Sem serviço',
+        'quantidade': row['quantidade'],
+        'receita': (row['receita_total'] is int) 
+            ? (row['receita_total'] as int).toDouble() 
+            : (row['receita_total'] as double?) ?? 0.0,
+      };
+    }).toList();
+    
+    // 9. Previsão de receita (atendimentos não pagos)
+    final previsaoReceita = await calcularPrevisaoReceita(mes: mes);
+    
+    return {
+      'receita': receita,
+      'despesa': despesa,
+      'receita_mes_anterior': receitaMesAnterior,
+      'total_atendimentos': totalAtendimentos,
+      'atendimentos_concluidos': atendimentosConcluidos,
+      'atendimentos_pendentes': atendimentosPendentes,
+      'atendimentos_mes_anterior': atendimentosMesAnterior,
+      'clientes_atendidos': clientesAtendidos.length,
+      'ticket_medio': ticketMedio,
+      'taxa_conclusao': taxaConclusao,
+      'media_diaria_receita': mediaDiariaReceita,
+      'top_servicos': topServicos,
+      'previsao_receita': previsaoReceita,
+    };
+  }
 }
+

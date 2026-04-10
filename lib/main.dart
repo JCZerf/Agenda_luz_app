@@ -1,4 +1,5 @@
 import 'package:AgendaLuz/screens/cliente_form_screen.dart';
+import 'package:AgendaLuz/screens/dashboard_financeiro_screen.dart';
 import 'package:AgendaLuz/screens/movimentacao_form_screen.dart';
 import 'package:AgendaLuz/screens/notifications_screen.dart';
 import 'package:AgendaLuz/screens/servico_form_screen.dart';
@@ -119,6 +120,7 @@ class AgendALuzApp extends StatelessWidget {
         '/servico_form': (context) => const ServicoFormScreen(),
         '/notifications': (context) => const NotificationsScreen(),
         '/configuracoes': (context) => const ConfiguracoesScreen(),
+        '/dashboard_financeiro': (context) => const DashboardFinanceiroScreen(),
       },
     );
   }
