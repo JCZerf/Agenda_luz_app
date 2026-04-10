@@ -1,138 +1,193 @@
 # AgendALuz
 
-Aplicativo para profissionais autônomos, com foco em designers de sobrancelhas, para gerenciar agendamentos, finanças e clientes de forma simples, organizada e totalmente offline.
+Aplicativo Flutter para gestão de agenda, clientes, serviços e financeiro de profissionais autônomos da área da beleza.
 
-## Visão geral
+## Estado atual do app
 
-O AgendALuz foi criado para atender às necessidades reais de uma profissional da beleza (Amanda), permitindo:
-
-- Agendar atendimentos com e sem cliente cadastrado
-- Acompanhar o status de cada atendimento (pago, pendente, concluído)
-- Registrar receitas e despesas
-- Visualizar o desempenho mensal
-- Controlar histórico de clientes e movimentações
-- Cadastrar tipos de serviço com valores padrão
+- Nome do app: `AgendALuz`
+- Versão atual: `1.4.2+17` (conforme `pubspec.yaml`)
+- Plataforma: Flutter (Android/iOS)
+- Idioma padrão: `pt_BR`
+- Persistência local: SQLite (`agendaluz_v5.db`)
+- Operação: offline (sem login)
 
 ## Funcionalidades implementadas
 
+### Agenda
+
+- Visualização por período: diário, semanal e mensal
+- Seleção de data de referência na agenda
+- Botão "Voltar para Hoje"
+- Criação de agendamento em dois modos:
+  - Com cliente cadastrado
+  - Sem cliente cadastrado (`nome_livre`)
+- Edição, visualização de detalhes e exclusão (inclusive com `Dismissible`)
+- Conclusão automática de atendimentos passados em mais de 2 horas
+- Conclusão manual de atendimento pendente
+
+### Atendimentos
+
+- Tela dedicada para atendimentos concluídos
+- Considera concluídos explícitos e auto-concluídos (2h+)
+- Filtro por mês
+- Busca por nome da cliente
+- Total de valor dos atendimentos listados no período
+- Ações: visualizar, editar, excluir e desmarcar conclusão
+
 ### Clientes
 
-- Cadastro de clientes com nome, telefone e observações
-- Formatação automática de telefone
-- Visualização detalhada com último atendimento
-- Edição e exclusão com confirmação
-- Suporte a agendamentos sem cliente cadastrado
-- Histórico automático de atendimentos
+- Cadastro, edição e exclusão com confirmação
+- Formatação de telefone no formulário
+- Busca por nome
+- Exibição de último atendimento (`historico`)
+- Tags de relacionamento por recência do último atendimento (ex.: Recente, Em rotina, Agendar logo)
 
-### Agendamentos
+### Serviços
 
-- Criação de agendamento com ou sem cliente
-- Campos de data/hora, valor, status de pagamento, status de conclusão, observações, tempo estimado (opcional) e tipo de serviço (opcional)
-- Conclusão manual ou automática após a data
-- Edição e exclusão com confirmação
-- Exclusão rápida com `Dismissible`
-- Proteção contra múltiplos salvamentos
+- Cadastro de serviço com:
+  - Nome
+  - Valor
+  - Custo opcional
+  - Tempo médio em minutos
+- Edição, exclusão e visualização de detalhes
+- Preenchimento automático de valor e tempo no agendamento
+- Contagem de serviços realizados por serviço
+- Relatório mensal de serviços (total, valor e distribuição por tipo)
 
-### Agenda (visualização)
+### Financeiro
 
-- Modos de exibição: diário, semanal e mensal
-- Exibição baseada em data de referência personalizada
-- Botão para retorno ao dia atual
-- Destaques visuais para status, cliente e foco de leitura
-- Marcação automática de conclusão para atendimentos passados
+- Registro de movimentações manuais (receita/despesa)
+- Movimentação automática para atendimento pago
+- Resumo mensal com:
+  - Receita
+  - Despesas
+  - Saldo líquido
+  - Previsão de receita (atendimentos não pagos)
+- Filtro por mês (navegação entre meses)
+- Edição/exclusão apenas de movimentações manuais
 
-### Atendimentos realizados
+### Notificações
 
-- Lista apenas atendimentos concluídos
-- Exibição com cliente e data/hora
-- Possibilidade de reverter para pendente
-- Contador total de atendimentos realizados
-- Detalhes completos do atendimento
+- Inicialização de notificações locais na abertura do app
+- Agendamento automático por atendimento futuro:
+  - 2 dias antes
+  - 1 dia antes
+  - 2 horas antes
+- Reagendamento global de notificações
+- Cancelamento global de notificações
+- Tela de gerenciamento com listagem de notificações pendentes
+- Notificação de teste imediata
 
-### Controle financeiro
+### Backup e restauração
 
-- Tela separada para movimentações
-- Receitas e despesas lançadas manualmente
-- Receita automática com base em atendimentos pagos
-- Distinção entre origem manual e automática
-- Exibição do valor total do mês
-- Comparativo com mês anterior
-- Edição e exclusão de movimentações
+- Backup automático na inicialização do app
+- Backup manual em JSON com compartilhamento (`share_plus`)
+- Listagem de backups locais salvos no diretório da aplicação
+- Restauração de backup com confirmação e backup de segurança prévio
+- Opção de restauração por caminho de arquivo
 
-### Tipos de serviço
+## Navegação principal
 
-- Cadastro com nome, valor padrão, custo (opcional) e tempo médio em minutos
-- Integração com formulário de agendamento
-- Preenchimento automático de valor e tempo
-- Edição e exclusão com confirmação
+A `BottomNavigationBar` possui 5 abas:
 
-## Estrutura do banco de dados (SQLite)
+- Agenda
+- Atendimentos
+- Clientes
+- Serviços
+- Financeiro
+
+Rotas nomeadas em `MaterialApp`:
+
+- `/home`
+- `/agendamento`
+- `/cliente_form`
+- `/nova_movimentacao`
+- `/servico_form`
+- `/notifications`
+- `/configuracoes`
+
+## Estrutura técnica
+
+- `lib/database/`: acesso ao SQLite (`DatabaseHelper`)
+- `lib/models/`: entidades de domínio
+- `lib/screens/`: telas e formulários
+- `lib/services/`:
+  - `notification_service.dart`
+  - `backup_service.dart`
+- `lib/utils/`: componentes auxiliares
+
+Principais pacotes:
+
+- `sqflite`
+- `path`
+- `intl`
+- `flutter_local_notifications`
+- `timezone`
+- `path_provider`
+- `share_plus`
+- `package_info_plus`
+
+## Banco de dados (SQLite)
+
+Versão do schema: `5`
+Arquivo: `agendaluz_v5.db`
 
 ### Tabela `clientes`
 
-| Campo               | Tipo              |
-|---------------------|-------------------|
-| id                  | INTEGER           |
-| nome                | TEXT              |
-| telefone            | TEXT              |
-| observacoes         | TEXT              |
-| frequencia_retorno  | INTEGER           |
-| proximo_atendimento | TEXT              |
+| Campo        | Tipo    |
+|--------------|---------|
+| id           | INTEGER |
+| nome         | TEXT    |
+| telefone     | TEXT    |
+| observacoes  | TEXT    |
+| historico    | TEXT    |
 
 ### Tabela `atendimentos`
 
-| Campo       | Tipo               |
-|-------------|--------------------|
-| id          | INTEGER            |
-| cliente_id  | INTEGER (nullable) |
-| data_hora   | TEXT               |
-| valor       | REAL               |
-| pago        | INTEGER (0 ou 1)   |
-| concluido   | INTEGER (0 ou 1)   |
-| observacoes | TEXT               |
+| Campo                   | Tipo               |
+|-------------------------|--------------------|
+| id                      | INTEGER            |
+| cliente_id              | INTEGER (nullable) |
+| nome_livre              | TEXT               |
+| data_hora               | TEXT               |
+| valor                   | REAL               |
+| pago                    | INTEGER (0 ou 1)   |
+| observacoes             | TEXT               |
+| concluido               | INTEGER (0 ou 1)   |
+| servico_id              | INTEGER (nullable) |
+| tempo_estimado_minutos  | INTEGER (nullable) |
 
 ### Tabela `movimentacoes_financeiras`
 
-| Campo     | Tipo                         |
-|-----------|------------------------------|
-| id        | INTEGER                      |
-| descricao | TEXT                         |
-| valor     | REAL                         |
-| data      | TEXT                         |
-| tipo      | TEXT (`receita` ou `despesa`) |
-| origem    | TEXT (`manual` ou `automatica`) |
+| Campo          | Tipo                       |
+|----------------|----------------------------|
+| id             | INTEGER                    |
+| tipo           | TEXT (`receita`/`despesa`) |
+| valor          | REAL                       |
+| descricao      | TEXT                       |
+| data           | TEXT                       |
+| origem         | TEXT (`manual`/`automatica`) |
+| atendimento_id | INTEGER (nullable)         |
 
-## Estilo e interface
+### Tabela `servicos`
 
-- Paleta de cores principal:
-  - Rosa principal: `#D9A7B0`
-  - Rosa claro: `#FFF1F3`
-  - Rosa escuro (texto): `#8A4B57`
-- Interface visual alinhada ao perfil da cliente
-- Bordas arredondadas (`Radius.circular(16 ou 20)`)
-- Boa legibilidade e contraste
-- `BottomNavigationBar` com 5 abas: Agenda, Atendimentos, Clientes, Serviços e Financeiro
+| Campo               | Tipo    |
+|---------------------|---------|
+| id                  | INTEGER |
+| nome                | TEXT    |
+| valor               | REAL    |
+| custo               | REAL    |
+| tempo_medio_minutos | INTEGER |
+| data_criacao        | TEXT    |
 
-## Arquitetura técnica
+## Execução do projeto
 
-- Flutter com SQLite offline
-- Estrutura por módulos:
-  - `models/` para entidades
-  - `database/` com `DatabaseHelper`
-  - `screens/` para telas principais
-- Navegação com `Navigator.pushNamed` e argumentos
-- Estado local com `setState`
-- Componentes reutilizáveis para separação de UI e lógica
-- Modal Bottom Sheets para ações contextuais
-- Formatação de data/hora com `intl` (`DateFormat`)
-- Compatível com Android e iOS
-- Migrations para versionamento do banco de dados
-
-## Versão
-
-```txt
-Versão: 1.3.3+8
-Status: MVP completo e funcional (correções para dispositivos físicos)
-Publicação: uso interno da cliente Amanda (offline)
-APK: build/app/outputs/flutter-apk/app-release.apk
+```bash
+flutter pub get
+flutter run
 ```
+
+## Observações
+
+- O app inclui telas de configurações para backup e notificações.
+- O projeto possui classes legadas (`agendamento.dart` e `atedimento_Com_Cliente.dart`) que não são o modelo principal atualmente.
