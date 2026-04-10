@@ -87,22 +87,91 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
     }
   }
 
+  String _nomeMes(int mes) {
+    final nome = DateFormat('MMMM', 'pt_BR').format(DateTime(2000, mes));
+    return toBeginningOfSentenceCase(nome) ?? nome;
+  }
+
   void _selecionarMes() async {
-    final DateTime? dataSelecionada = await showDatePicker(
+    int mesSelecionadoTemp = _mesSelecionado.month;
+    int anoSelecionadoTemp = _mesSelecionado.year;
+    final anoAtual = DateTime.now().year;
+    final anosDisponiveis = List<int>.generate((anoAtual + 5) - 2020 + 1, (i) => 2020 + i)
+        .reversed
+        .toList();
+
+    final DateTime? dataSelecionada = await showDialog<DateTime>(
       context: context,
-      initialDate: _mesSelecionado,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      helpText: 'Selecione o mês',
-      fieldLabelText: 'Mês',
-      locale: const Locale('pt', 'BR'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Selecionar mês e ano'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                value: mesSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Mês',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(12, (index) {
+                  final mes = index + 1;
+                  return DropdownMenuItem<int>(
+                    value: mes,
+                    child: Text(_nomeMes(mes)),
+                  );
+                }),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => mesSelecionadoTemp = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: anoSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Ano',
+                  border: OutlineInputBorder(),
+                ),
+                items: anosDisponiveis
+                    .map(
+                      (ano) => DropdownMenuItem<int>(
+                        value: ano,
+                        child: Text(ano.toString()),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => anoSelecionadoTemp = value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(
+                context,
+                DateTime(anoSelecionadoTemp, mesSelecionadoTemp),
+              ),
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
     );
 
     if (dataSelecionada != null) {
       setState(() {
-        _mesSelecionado = dataSelecionada;
-        _filtrarAtendimentos();
+        _mesSelecionado = DateTime(dataSelecionada.year, dataSelecionada.month);
       });
+      _filtrarAtendimentos();
     }
   }
 

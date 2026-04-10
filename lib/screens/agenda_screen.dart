@@ -12,7 +12,7 @@ class AgendaScreen extends StatefulWidget {
 
 class _AgendaScreenState extends State<AgendaScreen> {
   int _abaSelecionada = 0;
-  DateTime _dataSelecionada = DateTime.now();
+  DateTime _mesSelecionado = DateTime(DateTime.now().year, DateTime.now().month);
 
   final List<String> opcoes = ['Diário', 'Semanal', 'Mensal'];
   List<Map<String, dynamic>> _todos = [];
@@ -77,14 +77,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   List<Map<String, dynamic>> _filtrar() {
-    final agora = _dataSelecionada;
+    final hoje = DateTime.now();
     if (_abaSelecionada == 0) {
       return _todos.where((a) {
         final data = DateTime.parse(a['data_hora']);
-        return data.year == agora.year && data.month == agora.month && data.day == agora.day;
+        return data.year == hoje.year && data.month == hoje.month && data.day == hoje.day;
       }).toList();
     } else if (_abaSelecionada == 1) {
-      final inicioSemana = agora.subtract(Duration(days: agora.weekday - 1));
+      final inicioSemana = hoje.subtract(Duration(days: hoje.weekday - 1));
       final fimSemana = inicioSemana.add(const Duration(days: 6));
       return _todos.where((a) {
         final data = DateTime.parse(a['data_hora']);
@@ -94,13 +94,100 @@ class _AgendaScreenState extends State<AgendaScreen> {
     } else {
       return _todos.where((a) {
         final data = DateTime.parse(a['data_hora']);
-        return data.year == agora.year && data.month == agora.month;
+        return data.year == _mesSelecionado.year && data.month == _mesSelecionado.month;
       }).toList();
     }
   }
 
-  bool _mesmoDia(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+  bool _mesmoMes(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month;
+  }
+
+  String _nomeMes(int mes) {
+    final nome = DateFormat('MMMM', 'pt_BR').format(DateTime(2000, mes));
+    return toBeginningOfSentenceCase(nome) ?? nome;
+  }
+
+  Future<void> _selecionarMesAno() async {
+    int mesSelecionadoTemp = _mesSelecionado.month;
+    int anoSelecionadoTemp = _mesSelecionado.year;
+    final anoAtual = DateTime.now().year;
+    final anosDisponiveis = List<int>.generate((anoAtual + 5) - 2020 + 1, (i) => 2020 + i)
+        .reversed
+        .toList();
+
+    final DateTime? dataSelecionada = await showDialog<DateTime>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Selecionar mês e ano'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                value: mesSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Mês',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(12, (index) {
+                  final mes = index + 1;
+                  return DropdownMenuItem<int>(
+                    value: mes,
+                    child: Text(_nomeMes(mes)),
+                  );
+                }),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => mesSelecionadoTemp = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: anoSelecionadoTemp,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Ano',
+                  border: OutlineInputBorder(),
+                ),
+                items: anosDisponiveis
+                    .map(
+                      (ano) => DropdownMenuItem<int>(
+                        value: ano,
+                        child: Text(ano.toString()),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => anoSelecionadoTemp = value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(
+                context,
+                DateTime(anoSelecionadoTemp, mesSelecionadoTemp),
+              ),
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (dataSelecionada != null) {
+      setState(() {
+        _mesSelecionado = DateTime(dataSelecionada.year, dataSelecionada.month);
+      });
+    }
   }
 
   void _mostrarDetalhes(BuildContext context, Map<String, dynamic> a) {
@@ -435,6 +522,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
     const rosaClaro = Color(0xFFFFF1F3);
     const rosaPrincipal = Color(0xFFD9A7B0);
     const rosaTexto = Color(0xFF8A4B57);
+    final hoje = DateTime.now();
+    final subtitulo = _abaSelecionada == 2
+        ? toBeginningOfSentenceCase(DateFormat("MMMM 'de' yyyy", 'pt_BR').format(_mesSelecionado))
+        : DateFormat('dd/MM/yyyy').format(hoje);
 
     return Scaffold(
       appBar: AppBar(
@@ -454,7 +545,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
-                  DateFormat('dd/MM/yyyy').format(_dataSelecionada),
+                  subtitulo,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 14,
@@ -473,29 +564,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
             },
             tooltip: 'Configurações',
           ),
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+          if (_abaSelecionada == 2)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.calendar_month, color: Colors.white),
+                onPressed: _selecionarMesAno,
+                tooltip: 'Selecionar mês/ano',
+              ),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.date_range, color: Colors.white),
-              onPressed: () async {
-                final selecionada = await showDatePicker(
-                  context: context,
-                  initialDate: _dataSelecionada,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2100),
-                );
-                if (selecionada != null) {
-                  setState(() {
-                    _dataSelecionada = selecionada;
-                  });
-                }
-              },
-            ),
-          ),
         ],
       ),
 
@@ -557,7 +638,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   }),
                 ),
               ),
-              if (!_mesmoDia(_dataSelecionada, DateTime.now()))
+              if (_abaSelecionada == 2 && !_mesmoMes(_mesSelecionado, DateTime.now()))
                 Container(
                   color: rosaClaro,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -571,13 +652,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       child: TextButton.icon(
                         onPressed: () {
                           setState(() {
-                            _dataSelecionada = DateTime.now();
-                            _abaSelecionada = 0;
+                            _mesSelecionado = DateTime(hoje.year, hoje.month);
                           });
                         },
-                        icon: const Icon(Icons.today, color: rosaTexto, size: 18),
+                        icon: const Icon(Icons.calendar_today, color: rosaTexto, size: 18),
                         label: const Text(
-                          'Voltar para Hoje',
+                          'Voltar para Mês Atual',
                           style: TextStyle(
                             color: rosaTexto,
                             fontWeight: FontWeight.w600,
