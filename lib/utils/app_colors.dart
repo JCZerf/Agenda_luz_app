@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 /// Classe com todas as cores do aplicativo AgendaLuz
-/// Paleta sofisticada e minimalista com tons de rosa suaves
+/// Paleta feminina vibrante e alegre
 class AppColors {
-  // Cores principais - Tom rosa nude elegante
-  static const Color rosaPrincipal = Color(0xFFD4A5A5);      // Rosa nude suave
-  static const Color rosaEscuro = Color(0xFF8B6F7A);         // Malva terroso elegante
-  static const Color rosaClaro = Color(0xFFFAF5F5);          // Off-white rosado delicado
-  static const Color rosaFundoGeral = Color(0xFFF9F4F5);     // Fundo muito sutil
-  static const Color rosaMedio = Color(0xFFC9999A);          // Rosa acinzentado refinado
+  // Cores principais - Tom rosa vibrante e feminino
+  static const Color rosaPrincipal = Color(0xFFFF99AC);      // Rosa chiclete vibrante
+  static const Color rosaEscuro = Color(0xFFD45D79);         // Rosa intenso elegante
+  static const Color rosaClaro = Color(0xFFFFF0F3);          // Rosa clarinho delicado
+  static const Color rosaFundoGeral = Color(0xFFFFF5F7);     // Fundo rosa suave
+  static const Color rosaMedio = Color(0xFFFFB3C6);          // Rosa médio alegre
   
   // Cores de texto
-  static const Color textoEscuro = Color(0xFF6B5660);        // Tom mais suave para melhor leitura
+  static const Color textoEscuro = Color(0xFFD45D79);        // Rosa intenso para textos
   static const Color textoBranco = Colors.white;
   
   // Cores de status

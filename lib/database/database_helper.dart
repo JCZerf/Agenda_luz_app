@@ -308,6 +308,29 @@ class DatabaseHelper {
     return await dbClient.delete('clientes', where: 'id = ?', whereArgs: [id]);
   }
 
+  // Buscar último atendimento concluído do cliente
+  Future<DateTime?> buscarUltimoAtendimentoConcluido(int clienteId) async {
+    final dbClient = await db;
+    final resultado = await dbClient.query(
+      'atendimentos',
+      where: 'cliente_id = ? AND concluido = 1',
+      whereArgs: [clienteId],
+      orderBy: 'data_hora DESC',
+      limit: 1,
+    );
+    
+    if (resultado.isEmpty) {
+      return null;
+    }
+    
+    try {
+      final dataHoraStr = resultado.first['data_hora'] as String;
+      return DateTime.parse(dataHoraStr);
+    } catch (e) {
+      return null;
+    }
+  }
+
   // ===================== CRUD Movimentações =====================
 
   Future<int> inserirMovimentacao(MovimentacaoFinanceira m) async {

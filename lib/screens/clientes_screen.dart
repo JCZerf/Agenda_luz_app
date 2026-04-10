@@ -2,6 +2,7 @@ import 'package:AgendaLuz/database/database_helper.dart';
 import 'package:AgendaLuz/models/cliente.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/app_colors.dart';
 
@@ -46,7 +47,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
   String _formatarHistorico(String? historicoIso) {
     if (historicoIso == null || historicoIso.trim().isEmpty) {
-      return 'Sem histórico de atendimento';
+      return 'Sem atendimento concluído';
     }
 
     try {
@@ -57,30 +58,37 @@ class _ClientesScreenState extends State<ClientesScreen> {
     }
   }
 
-  Map<String, dynamic> _obterTagCliente(String? historicoIso) {
-    if (historicoIso == null || historicoIso.trim().isEmpty) {
-      return {'texto': 'Novo cliente', 'cor': Colors.blue, 'corFundo': Colors.blue.shade50};
+  Future<Map<String, dynamic>> _obterTagCliente(Cliente cliente) async {
+    // Busca o último atendimento CONCLUÍDO do cliente
+    final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
+    
+    if (ultimoAtendimento == null) {
+      return {
+        'texto': 'Sem histórico de atendimento', 
+        'dias': null, 
+        'cor': AppColors.rosaPrincipal, 
+        'corFundo': AppColors.rosaPrincipal.withOpacity(0.1)
+      };
     }
 
-    try {
-      final ultimoAtendimento = DateTime.parse(historicoIso);
-      final agora = DateTime.now();
-      final diasAtras = agora.difference(ultimoAtendimento).inDays;
+    final agora = DateTime.now();
+    final diasAtras = agora.difference(ultimoAtendimento).inDays;
 
-      if (diasAtras <= 5) {
-        return {'texto': 'Recente', 'cor': Colors.green, 'corFundo': Colors.green.shade50};
-      } else if (diasAtras <= 10) {
-        return {'texto': 'Em rotina', 'cor': Colors.blue, 'corFundo': Colors.blue.shade50};
-      } else if (diasAtras <= 15) {
-        return {'texto': 'Agendar logo', 'cor': Colors.orange, 'corFundo': Colors.orange.shade50};
-      } else if (diasAtras <= 30) {
-        return {'texto': 'Atrasando', 'cor': Colors.red, 'corFundo': Colors.red.shade50};
-      } else {
-        return {'texto': 'Há muito tempo', 'cor': Colors.grey, 'corFundo': Colors.grey.shade50};
-      }
-    } catch (e) {
-      return {'texto': 'Data inválida', 'cor': Colors.grey, 'corFundo': Colors.grey.shade50};
+    String texto;
+    if (diasAtras == 0) {
+      texto = 'Hoje';
+    } else if (diasAtras == 1) {
+      texto = 'Ontem';
+    } else {
+      texto = 'Há $diasAtras dias';
     }
+
+    return {
+      'texto': texto,
+      'dias': diasAtras,
+      'cor': AppColors.rosaPrincipal,
+      'corFundo': AppColors.rosaPrincipal.withOpacity(0.1)
+    };
   }
 
   String _formatarTelefone(String telefone) {
@@ -95,12 +103,49 @@ class _ClientesScreenState extends State<ClientesScreen> {
     return telefone;
   }
 
+  Future<void> _abrirWhatsApp(String telefone) async {
+    // Remove caracteres não numéricos
+    final numeroLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    // Adiciona código do país se não tiver
+    final numeroCompleto = numeroLimpo.startsWith('55') ? numeroLimpo : '55$numeroLimpo';
+    
+    final mensagem = Uri.encodeComponent('Olá! Gostaria de agendar um horário.');
+    final url = Uri.parse('https://wa.me/$numeroCompleto?text=$mensagem');
+    
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao abrir WhatsApp: $e')),
+        );
+      }
+    }
+  }
+
   void _mostrarOpcoes(Cliente cliente) {
     showModalBottomSheet(
       context: context,
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          ListTile(
+            leading: const Icon(Icons.chat, color: Colors.green),
+            title: const Text('WhatsApp'),
+            onTap: () {
+              Navigator.pop(context);
+              _abrirWhatsApp(cliente.telefone);
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.visibility),
             title: const Text('Visualizar'),
@@ -173,7 +218,16 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
-  void _mostrarDetalhes(Cliente cliente) {
+  void _mostrarDetalhes(Cliente cliente) async {
+    // Buscar o último atendimento concluído
+    final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
+    
+    final textoUltimoAtendimento = ultimoAtendimento != null
+        ? DateFormat('dd/MM/yyyy – HH:mm').format(ultimoAtendimento)
+        : 'Sem histórico de atendimento';
+    
+    if (!mounted) return;
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -200,10 +254,29 @@ class _ClientesScreenState extends State<ClientesScreen> {
                 _linhaDetalhe(Icons.notes, 'Observações', cliente.observacoes!),
               _linhaDetalhe(
                 Icons.calendar_today,
-                'Último atendimento',
-                _formatarHistorico(cliente.historico),
+                'Último atendimento concluído',
+                textoUltimoAtendimento,
               ),
               const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.chat),
+                      label: const Text('WhatsApp'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _abrirWhatsApp(cliente.telefone);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -474,9 +547,24 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                       // Tag do cliente
                                       Row(
                                         children: [
-                                          Builder(
-                                            builder: (context) {
-                                              final tag = _obterTagCliente(cliente.historico);
+                                          FutureBuilder<Map<String, dynamic>>(
+                                            future: _obterTagCliente(cliente),
+                                            builder: (context, snapshot) {
+                                              if (!snapshot.hasData) {
+                                                return const SizedBox(
+                                                  width: 80,
+                                                  height: 20,
+                                                  child: Center(
+                                                    child: SizedBox(
+                                                      width: 12,
+                                                      height: 12,
+                                                      child: CircularProgressIndicator(strokeWidth: 1),
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                              
+                                              final tag = snapshot.data!;
                                               return Container(
                                                 padding: const EdgeInsets.symmetric(
                                                   horizontal: 8,
