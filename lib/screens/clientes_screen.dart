@@ -199,25 +199,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
     );
   }
 
-  Widget _linhaDetalhe(IconData icone, String titulo, String valor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icone, color: const Color(0xFFD9A7B0)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '$titulo: $valor',
-              style: const TextStyle(fontSize: 16, color: Color(0xFF8A4B57)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _mostrarDetalhes(Cliente cliente) async {
     // Buscar o último atendimento concluído
     final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
@@ -230,113 +211,268 @@ class _ClientesScreenState extends State<ClientesScreen> {
     
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      backgroundColor: AppColors.rosaClaro,
+      backgroundColor: Colors.white,
       builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Text(
-                  'Detalhes da Cliente',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textoEscuro),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _linhaDetalhe(Icons.person, 'Nome', cliente.nome),
-              _linhaDetalhe(Icons.phone, 'Telefone', _formatarTelefone(cliente.telefone)),
-              if ((cliente.observacoes?.trim().isNotEmpty ?? false))
-                _linhaDetalhe(Icons.notes, 'Observações', cliente.observacoes!),
-              _linhaDetalhe(
-                Icons.calendar_today,
-                'Último atendimento concluído',
-                textoUltimoAtendimento,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.chat),
-                      label: const Text('WhatsApp'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _abrirWhatsApp(cliente.telefone);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Editar'),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(
-                          context,
-                          '/cliente_form',
-                          arguments: {'modo': 'editar', 'cliente': cliente},
-                        ).then((_) => _carregarClientes());
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      label: const Text('Excluir', style: TextStyle(color: Colors.red)),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        final confirmado = await showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text('Excluir Cliente'),
-                            content: Text('Deseja realmente excluir ${cliente.nome}?'),
-                            actions: [
-                              TextButton(
-                                child: const Text('Cancelar'),
-                                onPressed: () => Navigator.pop(context, false),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header com foto/avatar
+                    Center(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.rosaPrincipal,
+                                  AppColors.rosaMedio,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                              ElevatedButton(
-                                child: const Text('Excluir'),
-                                onPressed: () => Navigator.pop(context, true),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                cliente.nome[0].toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            cliente.nome,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textoEscuro,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Informações em cards
+                    _buildInfoCard(
+                      Icons.phone,
+                      'Telefone',
+                      _formatarTelefone(cliente.telefone),
+                      onTap: () => _abrirWhatsApp(cliente.telefone),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildInfoCard(
+                      Icons.calendar_today,
+                      'Último atendimento',
+                      textoUltimoAtendimento,
+                    ),
+                    
+                    if ((cliente.observacoes?.trim().isNotEmpty ?? false)) ...[
+                      const SizedBox(height: 12),
+                      _buildInfoCard(
+                        Icons.notes,
+                        'Observações',
+                        cliente.observacoes!,
+                      ),
+                    ],
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Botões de ação
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.rosaClaro,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.chat),
+                              label: const Text('Enviar WhatsApp'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF25D366),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _abrirWhatsApp(cliente.telefone);
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  icon: Icon(Icons.edit, color: AppColors.textoEscuro),
+                                  label: const Text('Editar'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.textoEscuro,
+                                    side: BorderSide(color: AppColors.rosaPrincipal),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/cliente_form',
+                                      arguments: {'modo': 'editar', 'cliente': cliente},
+                                    ).then((_) => _carregarClientes());
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  label: const Text('Excluir'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                    side: const BorderSide(color: Colors.red),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    Navigator.pop(context);
+                                    final confirmado = await showDialog(
+                                      context: context,
+                                      builder: (_) => AlertDialog(
+                                        title: const Text('Excluir Cliente'),
+                                        content: Text('Deseja realmente excluir ${cliente.nome}?'),
+                                        actions: [
+                                          TextButton(
+                                            child: const Text('Cancelar'),
+                                            onPressed: () => Navigator.pop(context, false),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
+                                            child: const Text('Excluir'),
+                                            onPressed: () => Navigator.pop(context, true),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirmado == true) {
+                                      await DatabaseHelper().deletarCliente(cliente.id!);
+                                      _carregarClientes();
+                                    }
+                                  },
+                                ),
                               ),
                             ],
                           ),
-                        );
-                        if (confirmado == true) {
-                          await DatabaseHelper().deletarCliente(cliente.id!);
-                          _carregarClientes();
-                        }
-                      },
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoCard(IconData icone, String titulo, String valor, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.rosaClaro,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.rosaPrincipal.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.rosaPrincipal.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icone,
+                color: AppColors.rosaPrincipal,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textoEscuro.withOpacity(0.6),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    valor,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textoEscuro,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  child: const Text('Fechar'),
-                  onPressed: () => Navigator.pop(context),
-                ),
+            ),
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.rosaPrincipal,
               ),
-            ],
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
