@@ -1,4 +1,4 @@
-import 'package:AgendaLuz/utils/developerSignature.dart';
+import 'package:AgendaLuz/utils/developer_signature.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/app_colors.dart';
@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             backgroundColor: Colors.white,
             selectedItemColor: AppColors.textoEscuro,
-            unselectedItemColor: AppColors.textoEscuro.withOpacity(0.5),
+            unselectedItemColor: AppColors.textoEscuro.withValues(alpha: 0.5),
             selectedFontSize: 12,
             unselectedFontSize: 10,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),

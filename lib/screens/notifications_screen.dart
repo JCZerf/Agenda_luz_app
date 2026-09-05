@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../services/notification_service.dart';
+import '../services/notification_settings_service.dart';
 import '../utils/app_colors.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -12,94 +12,51 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  List<PendingNotificationRequest> _notificacoesPendentes = [];
+  final _settings = NotificationSettingsService();
+
   bool _carregando = true;
+  bool _notificacoesAtivas = true;
+  Set<Duration> _offsetsAtivos = {};
 
   @override
   void initState() {
     super.initState();
-    _carregarNotificacoes();
+    _carregarConfiguracoes();
   }
 
-  Future<void> _carregarNotificacoes() async {
-    setState(() => _carregando = true);
-    final notificacoes = await NotificationService.obterNotificacoesPendentes();
+  Future<void> _carregarConfiguracoes() async {
+    final ativas = await _settings.notificacoesAtivas();
+    final offsets = await _settings.offsetsAtivos();
+
+    if (!mounted) return;
     setState(() {
-      _notificacoesPendentes = notificacoes;
+      _notificacoesAtivas = ativas;
+      _offsetsAtivos = offsets;
       _carregando = false;
     });
   }
 
-  Future<void> _reagendarTodasNotificacoes() async {
-    await NotificationService.reagendarNotificacoesExistentes();
-    await _carregarNotificacoes();
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Notificações reagendadas com sucesso!')));
-    }
-  }
+  Future<void> _alternarNotificacoesAtivas(bool valor) async {
+    setState(() => _notificacoesAtivas = valor);
+    await _settings.definirNotificacoesAtivas(valor);
 
-  Future<void> _cancelarTodasNotificacoes() async {
-    final confirmado = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancelar Notificações'),
-        content: const Text('Deseja realmente cancelar todas as notificações de lembrete?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Confirmar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmado == true) {
+    if (valor) {
+      await NotificationService.reagendarNotificacoesExistentes();
+    } else {
       await NotificationService.cancelarTodasNotificacoes();
-      await _carregarNotificacoes();
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Todas as notificações foram canceladas!')));
-      }
     }
   }
 
-  Future<void> _testarNotificacao() async {
-    await NotificationService.mostrarNotificacaoImediata(
-      titulo: 'Teste de Notificação',
-      corpo: 'Esta é uma notificação de teste do AgendALuz!',
-    );
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Notificação de teste enviada!')));
-    }
-  }
-
-  String _formatarTipoNotificacao(String? payload) {
-    if (payload == null) return 'Desconhecido';
-
-    try {
-      // Aqui você pode parsear o payload JSON para extrair informações
-      if (payload.contains('dois_dias_antes')) {
-        return '2 dias antes';
-      } else if (payload.contains('um_dia_antes')) {
-        return '1 dia antes';
-      } else if (payload.contains('duas_horas_antes')) {
-        return '2 horas antes';
+  Future<void> _alternarOffset(Duration offset, bool valor) async {
+    setState(() {
+      if (valor) {
+        _offsetsAtivos.add(offset);
+      } else {
+        _offsetsAtivos.remove(offset);
       }
-    } catch (e) {
-      // Ignora erros de parsing
-    }
-
-    return 'Lembrete';
+    });
+    await _settings.definirOffsetAtivo(offset, valor);
+    await NotificationService.reagendarNotificacoesExistentes();
   }
 
   @override
@@ -108,162 +65,66 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.textoEscuro,
         elevation: 0,
-        title: const Text('Notificações', style: TextStyle(color: Colors.white)),
+        title: const Text('Lembretes de Atendimento', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
         color: AppColors.rosaClaro,
-        child: Column(
-          children: [
-            // Botões de ação
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+        child: _carregando
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _reagendarTodasNotificacoes,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Reagendar Todas'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.rosaPrincipal,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: SwitchListTile(
+                      title: const Text('Ativar lembretes'),
+                      subtitle: const Text(
+                        'Recebe uma notificação no celular antes de cada atendimento, '
+                        'para você se preparar.',
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _testarNotificacao,
-                          icon: const Icon(Icons.notifications),
-                          label: const Text('Testar'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
+                      value: _notificacoesAtivas,
+                      activeColor: AppColors.rosaPrincipal,
+                      inactiveThumbColor: Colors.grey[400],
+                      inactiveTrackColor: Colors.grey[300],
+                      onChanged: _alternarNotificacoesAtivas,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      'Quando notificar',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textoEscuro,
+                        fontSize: 16,
                       ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _cancelarTodasNotificacoes,
-                      icon: const Icon(Icons.cancel),
-                      label: const Text('Cancelar Todas'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Column(
+                      children: [
+                        for (final opcao in NotificationSettingsService.opcoesDisponiveis)
+                          SwitchListTile(
+                            title: Text(opcao.rotulo),
+                            value: _offsetsAtivos.contains(opcao.antecedencia),
+                            activeColor: AppColors.rosaPrincipal,
+                            inactiveThumbColor: Colors.grey[400],
+                            inactiveTrackColor: Colors.grey[300],
+                            onChanged: _notificacoesAtivas
+                                ? (valor) => _alternarOffset(opcao.antecedencia, valor)
+                                : null,
+                          ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
-
-            // Informações
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.textoEscuro),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Notificações pendentes: ${_notificacoesPendentes.length}',
-                    style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-
-            // Lista de notificações
-            Expanded(
-              child: _carregando
-                  ? const Center(child: CircularProgressIndicator())
-                  : _notificacoesPendentes.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.notifications_off, size: 64, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Nenhuma notificação pendente',
-                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Crie um novo agendamento para ver as notificações',
-                            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _notificacoesPendentes.length,
-                      itemBuilder: (context, index) {
-                        final notificacao = _notificacoesPendentes[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ListTile(
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppColors.rosaPrincipal.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Icon(Icons.notifications, color: AppColors.textoEscuro),
-                            ),
-                            title: Text(
-                              notificacao.title ?? 'Sem título',
-                              style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  notificacao.body ?? 'Sem conteúdo',
-                                  style: TextStyle(color: Colors.grey[600]),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Tipo: ${_formatarTipoNotificacao(notificacao.payload)}',
-                                  style: TextStyle(
-                                    color: AppColors.rosaPrincipal,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: Text(
-                              'ID: ${notificacao.id}',
-                              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
       ),
     );
   }

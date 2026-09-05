@@ -27,7 +27,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   void _determinarAbaInicial() {
-    // Verifica se há atendimentos para hoje (diário)
     final hoje = DateTime.now();
     final atendimentosHoje = _todos.where((a) {
       final data = DateTime.parse(a['data_hora']);
@@ -35,11 +34,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }).toList();
 
     if (atendimentosHoje.isNotEmpty) {
-      setState(() => _abaSelecionada = 0); // Diário
+      setState(() => _abaSelecionada = 0);
       return;
     }
 
-    // Verifica se há atendimentos para esta semana (semanal)
     final inicioSemana = hoje.subtract(Duration(days: hoje.weekday - 1));
     final fimSemana = inicioSemana.add(const Duration(days: 6));
     final atendimentosSemana = _todos.where((a) {
@@ -49,22 +47,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }).toList();
 
     if (atendimentosSemana.isNotEmpty) {
-      setState(() => _abaSelecionada = 1); // Semanal
+      setState(() => _abaSelecionada = 1);
       return;
     }
 
-    // Verifica se há atendimentos para este mês (mensal)
     final atendimentosMes = _todos.where((a) {
       final data = DateTime.parse(a['data_hora']);
       return data.year == hoje.year && data.month == hoje.month;
     }).toList();
 
     if (atendimentosMes.isNotEmpty) {
-      setState(() => _abaSelecionada = 2); // Mensal
+      setState(() => _abaSelecionada = 2);
       return;
     }
 
-    // Se não há atendimentos em nenhuma aba, mantém diário (padrão)
     setState(() => _abaSelecionada = 0);
   }
 
@@ -74,7 +70,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _todos = atendimentos;
     });
 
-    // Determina a aba inicial baseada na disponibilidade de atendimentos
     _determinarAbaInicial();
   }
 
@@ -203,10 +198,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final tempoEstimado = a['tempo_estimado_minutos'] as int?;
     final nomeServico = a['nome_servico'] as String?;
 
-    // Verifica se deveria ser concluído automaticamente
-    final agora = DateTime.now();
-    final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-    final deveSerConcluido = agora.isAfter(duasHorasDepois) && dataHora.isBefore(agora);
+    final deveSerConcluido = Atendimento.deveSerConcluidoEm(dataHora, tempoEstimado);
 
     String statusTexto;
     Color statusCor;
@@ -349,8 +341,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         icon: const Icon(Icons.check_circle_outline),
                         label: const Text('Concluir'),
                         onPressed: () async {
-                          final atendimento = Atendimento.fromMap(a)..concluido = true;
+                          final atendimento = Atendimento.fromMap(a)
+                            ..concluido = true
+                            ..pago = true;
                           await DatabaseHelper().atualizarAtendimento(atendimento);
+                          if (!context.mounted) return;
                           Navigator.pop(context);
                           carregarAgendamentos();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -377,9 +372,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   void _mostrarOpcoes(BuildContext context, Map<String, dynamic> agendamento) {
     final dataHora = DateTime.parse(agendamento['data_hora']);
-    final agora = DateTime.now();
-    final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-    final deveSerConcluido = agora.isAfter(duasHorasDepois) && dataHora.isBefore(agora);
+    final tempoEstimado = agendamento['tempo_estimado_minutos'] as int?;
+    final deveSerConcluido = Atendimento.deveSerConcluidoEm(dataHora, tempoEstimado);
     final concluido = agendamento['concluido'] == 1;
 
     showModalBottomSheet(
@@ -403,10 +397,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 Navigator.pop(context);
                 final atendimento = Atendimento.fromMap(agendamento);
                 atendimento.concluido = true;
+                atendimento.pago = true;
 
                 await DatabaseHelper().atualizarAtendimento(atendimento);
                 carregarAgendamentos();
 
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(
                   context,
                 ).showSnackBar(const SnackBar(content: Text('Atendimento marcado como concluído')));
@@ -528,7 +524,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(100),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [AppColors.rosaEscuro, AppColors.rosaPrincipal],
               begin: Alignment.topLeft,
@@ -549,7 +545,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -574,7 +570,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                               Text(
                                 subtitulo,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w400,
                                 ),
@@ -587,7 +583,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: IconButton(
@@ -601,7 +597,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                           const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: IconButton(
@@ -643,7 +639,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                           boxShadow: selecionado
                               ? [
                                   BoxShadow(
-                                    color: AppColors.textoEscuro.withOpacity(0.3),
+                                    color: AppColors.textoEscuro.withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -687,7 +683,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.textoEscuro.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.textoEscuro.withValues(alpha: 0.3)),
                       ),
                       child: TextButton.icon(
                         onPressed: () {
@@ -752,14 +748,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         final concluido = a['concluido'] == 1;
                         final pago = a['pago'] == 1;
 
-                        // Verifica se deveria ser concluído automaticamente (2h após o horário)
-                        // MAS apenas se a data não for no futuro
-                        final agora = DateTime.now();
-                        final duasHorasDepois = data.add(const Duration(hours: 2));
-                        final deveSerConcluido =
-                            agora.isAfter(duasHorasDepois) && data.isBefore(agora);
+                        final tempoEstimado = a['tempo_estimado_minutos'] as int?;
+                        final deveSerConcluido = Atendimento.deveSerConcluidoEm(data, tempoEstimado);
 
-                        // Status para exibição: se já foi concluído ou se deveria ser
                         final statusConcluido = concluido || deveSerConcluido;
 
                         return Dismissible(
@@ -797,6 +788,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                           onDismissed: (_) async {
                             await DatabaseHelper().deletarAtendimento(a['id']);
                             carregarAgendamentos();
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(
                               context,
                             ).showSnackBar(const SnackBar(content: Text('Agendamento excluído')));
@@ -813,14 +805,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   children: [
-                                    // Ícone de status
                                     Container(
                                       width: 50,
                                       height: 50,
                                       decoration: BoxDecoration(
                                         color: statusConcluido
                                             ? Colors.green[50]
-                                            : AppColors.rosaPrincipal.withOpacity(0.1),
+                                            : AppColors.rosaPrincipal.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(25),
                                         border: Border.all(
                                           color: statusConcluido ? Colors.green : AppColors.rosaPrincipal,
@@ -834,7 +825,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 16),
-                                    // Informações principais
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -903,7 +893,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                         ],
                                       ),
                                     ),
-                                    // Status e ações
                                     Column(
                                       children: [
                                         if (pago)
@@ -989,7 +978,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textoEscuro.withOpacity(0.4),
+              color: AppColors.textoEscuro.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

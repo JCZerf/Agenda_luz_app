@@ -29,13 +29,15 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
     final todos = await DatabaseHelper().listarAtendimentosComNomeCliente();
     final agora = DateTime.now();
 
-    // Filtra atendimentos concluídos ou que deveriam ser concluídos automaticamente
-    // MAS apenas se a data não for no futuro
     final concluidos = todos.where((a) {
       final concluido = a['concluido'] == 1;
       final dataHora = DateTime.parse(a['data_hora']);
-      final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-      final deveSerConcluido = agora.isAfter(duasHorasDepois) && dataHora.isBefore(agora);
+      final tempoEstimadoMinutos = a['tempo_estimado_minutos'] as int?;
+      final deveSerConcluido = Atendimento.deveSerConcluidoEm(
+        dataHora,
+        tempoEstimadoMinutos,
+        agora: agora,
+      );
 
       return concluido || deveSerConcluido;
     }).toList();
@@ -49,14 +51,12 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
   void _filtrarAtendimentos() {
     setState(() {
       _atendimentosFiltrados = _todosAtendimentos.where((atendimento) {
-        // Filtra por mês
         final dataAtendimento = DateTime.parse(atendimento['data_hora']);
         final mesAtendimento = DateTime(dataAtendimento.year, dataAtendimento.month);
         final mesFiltro = DateTime(_mesSelecionado.year, _mesSelecionado.month);
 
         bool mesCorreto = mesAtendimento == mesFiltro;
 
-        // Filtra por nome se há texto de busca
         bool nomeCorreto = true;
         if (_textoBusca.isNotEmpty) {
           final nome = atendimento['nome_cliente'] ?? atendimento['nome_livre'] ?? 'Sem cadastro';
@@ -66,7 +66,6 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
         return mesCorreto && nomeCorreto;
       }).toList();
 
-      // Ordena por data (mais recente primeiro)
       _atendimentosFiltrados.sort(
         (a, b) => DateTime.parse(b['data_hora']).compareTo(DateTime.parse(a['data_hora'])),
       );
@@ -84,7 +83,7 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
     try {
       await DatabaseHelper().atualizarAtendimento(atendimento);
     } catch (e) {
-      print('Erro ao atualizar atendimento no banco: $e');
+      // nada a fazer
     }
   }
 
@@ -199,6 +198,7 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
               atendimento.concluido = false;
               await _atualizarAtendimentoNoBanco(atendimento);
               _carregarAtendimentosConcluidos();
+              if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Atendimento desmarcado como concluído')),
               );
@@ -362,7 +362,6 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
         color: AppColors.rosaClaro,
         child: Column(
           children: [
-            // Filtros
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -371,7 +370,6 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
               ),
               child: Column(
                 children: [
-                  // Seletor de mês
                   Row(
                     children: [
                       const Icon(Icons.calendar_today, color: AppColors.textoEscuro),
@@ -393,7 +391,6 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Campo de busca
                   TextField(
                     controller: _controladorBusca,
                     decoration: InputDecoration(
@@ -432,10 +429,9 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                 ],
               ),
             ),
-            // Informações do filtro
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.rosaPrincipal.withOpacity(0.1),
+              color: AppColors.rosaPrincipal.withValues(alpha: 0.1),
               child: Row(
                 children: [
                   const Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
@@ -472,7 +468,6 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                 ],
               ),
             ),
-            // Lista de atendimentos
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -512,10 +507,11 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                           final valor = (a['valor'] as num).toDouble();
                           final concluido = a['concluido'] == 1;
 
-                          // Verifica se foi concluído automaticamente
-                          final agora = DateTime.now();
-                          final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-                          final deveSerConcluido = agora.isAfter(duasHorasDepois);
+                          final tempoEstimadoMinutos = a['tempo_estimado_minutos'] as int?;
+                          final deveSerConcluido = Atendimento.deveSerConcluidoEm(
+                            dataHora,
+                            tempoEstimadoMinutos,
+                          );
                           final autoConcluido = !concluido && deveSerConcluido;
 
                           return GestureDetector(

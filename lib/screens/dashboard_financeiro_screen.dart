@@ -62,32 +62,26 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Seletor de Mês
                     _buildSeletorMes(),
                     
                     const SizedBox(height: 16),
                     
-                    // Cards Principais
                     _buildCardsPrincipais(),
                     
                     const SizedBox(height: 20),
                     
-                    // Comparativo com mês anterior
                     _buildComparativoMesAnterior(),
                     
                     const SizedBox(height: 20),
                     
-                    // Análise de Atendimentos
                     _buildAnaliseAtendimentos(),
                     
                     const SizedBox(height: 20),
                     
-                    // Top Serviços
                     _buildTopServicos(),
                     
                     const SizedBox(height: 20),
                     
-                    // Métricas de Desempenho
                     _buildMetricasDesempenho(),
                     
                     const SizedBox(height: 20),
@@ -196,7 +190,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -210,7 +204,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: cor.withOpacity(0.1),
+                  color: cor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icone, color: cor, size: 20),
@@ -263,7 +257,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -272,11 +266,11 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.compare_arrows, color: AppColors.rosaPrincipal),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Comparativo com mês anterior',
                   style: TextStyle(
                     fontSize: 16,
@@ -347,7 +341,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: cor.withOpacity(0.1),
+            color: cor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -385,7 +379,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -394,11 +388,11 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.analytics, color: AppColors.rosaPrincipal),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Análise de Atendimentos',
                   style: TextStyle(
                     fontSize: 16,
@@ -462,9 +456,9 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: cor.withOpacity(0.05),
+        color: cor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cor.withOpacity(0.2)),
+        border: Border.all(color: cor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -503,7 +497,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -512,11 +506,11 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.star, color: AppColors.rosaPrincipal),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Top Serviços do Mês',
                   style: TextStyle(
                     fontSize: 16,
@@ -569,7 +563,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
       decoration: BoxDecoration(
         color: AppColors.rosaClaro,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cor.withOpacity(0.3)),
+        border: Border.all(color: cor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -638,7 +632,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             colors: [AppColors.rosaPrincipal, AppColors.rosaMedio],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -646,7 +640,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.rosaPrincipal.withOpacity(0.3),
+              color: AppColors.rosaPrincipal.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -699,7 +693,7 @@ class _DashboardFinanceiroScreenState extends State<DashboardFinanceiroScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icone, color: Colors.white, size: 20),

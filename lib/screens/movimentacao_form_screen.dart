@@ -20,7 +20,7 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
   bool _isReceita = true;
   bool _modoEdicao = false;
   int? _idMovimentacao;
-  bool _salvando = false; // Estado para controlar o salvamento
+  bool _salvando = false;
 
   @override
   void didChangeDependencies() {
@@ -40,7 +40,7 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
   }
 
   Future<void> _salvarMovimentacao() async {
-    if (_salvando) return; // Previne múltiplos cliques
+    if (_salvando) return;
 
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -104,14 +104,13 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
             child: ListView(
               children: [
                 const SizedBox(height: 8),
-                // Campo de descrição
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -144,14 +143,13 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Campo de valor
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -185,14 +183,13 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Seletor de data
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -226,14 +223,13 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Seletor de tipo (Receita/Despesa)
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -335,15 +331,14 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Botão de salvar
                 Container(
                   width: double.infinity,
                   height: 56,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: _salvando
-                          ? [Colors.grey, Colors.grey.withOpacity(0.8)]
-                          : [AppColors.textoEscuro, AppColors.textoEscuro.withOpacity(0.8)],
+                          ? [Colors.grey, Colors.grey.withValues(alpha: 0.8)]
+                          : [AppColors.textoEscuro, AppColors.textoEscuro.withValues(alpha: 0.8)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -351,8 +346,8 @@ class _MovimentacaoFormScreenState extends State<MovimentacaoFormScreen> {
                     boxShadow: [
                       BoxShadow(
                         color: _salvando
-                            ? Colors.grey.withOpacity(0.3)
-                            : AppColors.textoEscuro.withOpacity(0.3),
+                            ? Colors.grey.withValues(alpha: 0.3)
+                            : AppColors.textoEscuro.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),

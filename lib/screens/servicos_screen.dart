@@ -82,7 +82,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
           ),
           const SizedBox(height: 20),
           ListTile(
-            leading: Icon(Icons.visibility, color: AppColors.textoEscuro),
+            leading: const Icon(Icons.visibility, color: AppColors.textoEscuro),
             title: const Text('Visualizar'),
             onTap: () {
               Navigator.pop(context);
@@ -90,7 +90,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.edit, color: AppColors.textoEscuro),
+            leading: const Icon(Icons.edit, color: AppColors.textoEscuro),
             title: const Text('Editar'),
             onTap: () {
               Navigator.pop(context);
@@ -158,7 +158,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
+              const Center(
                 child: Text(
                   'Detalhes do Serviço',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textoEscuro),
@@ -179,7 +179,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -247,7 +247,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
           Icon(icone, color: AppColors.rosaPrincipal, size: 20),
           const SizedBox(width: 12),
           Expanded(
-            child: Text('$titulo: $valor', style: TextStyle(fontSize: 16, color: AppColors.textoEscuro)),
+            child: Text('$titulo: $valor', style: const TextStyle(fontSize: 16, color: AppColors.textoEscuro)),
           ),
         ],
       ),
@@ -265,11 +265,11 @@ class _ServicosScreenState extends State<ServicosScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
-              Icon(Icons.bar_chart, color: AppColors.textoEscuro),
+              const Icon(Icons.bar_chart, color: AppColors.textoEscuro),
               const SizedBox(width: 8),
               Text(
                 'Relatório - ${DateFormat('MMMM yyyy', 'pt_BR').format(mesAtual)}',
-                style: TextStyle(color: AppColors.textoEscuro),
+                style: const TextStyle(color: AppColors.textoEscuro),
               ),
             ],
           ),
@@ -278,7 +278,6 @@ class _ServicosScreenState extends State<ServicosScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Resumo geral
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -294,9 +293,8 @@ class _ServicosScreenState extends State<ServicosScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Serviços por tipo
                 if ((relatorio['servicosPorTipo'] as Map).isNotEmpty) ...[
-                  Text(
+                  const Text(
                     'Serviços por tipo:',
                     style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textoEscuro),
                   ),
@@ -361,23 +359,21 @@ class _ServicosScreenState extends State<ServicosScreen> {
       ),
       body: Column(
         children: [
-          // Informações gerais
           Container(
             padding: const EdgeInsets.all(16),
             color: AppColors.rosaClaro,
             child: Row(
               children: [
-                Icon(Icons.favorite, color: AppColors.textoEscuro, size: 20),
+                const Icon(Icons.favorite, color: AppColors.textoEscuro, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Total de serviços: ${_servicos.length}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
                 ),
               ],
             ),
           ),
 
-          // Campo de busca
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -388,14 +384,14 @@ class _ServicosScreenState extends State<ServicosScreen> {
               controller: _controladorBusca,
               decoration: InputDecoration(
                 hintText: 'Buscar serviço por nome...',
-                prefixIcon: Icon(Icons.search, color: AppColors.textoEscuro),
+                prefixIcon: const Icon(Icons.search, color: AppColors.textoEscuro),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.rosaPrincipal),
+                  borderSide: const BorderSide(color: AppColors.rosaPrincipal),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.textoEscuro),
+                  borderSide: const BorderSide(color: AppColors.textoEscuro),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -421,24 +417,22 @@ class _ServicosScreenState extends State<ServicosScreen> {
             ),
           ),
 
-          // Informações do filtro
           if (_textoBusca.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.rosaPrincipal.withOpacity(0.1),
+              color: AppColors.rosaPrincipal.withValues(alpha: 0.1),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
+                  const Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
                   const SizedBox(width: 8),
                   Text(
                     '${_servicosFiltrados.length} serviço(s) encontrado(s)',
-                    style: TextStyle(fontSize: 12, color: AppColors.textoEscuro),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textoEscuro),
                   ),
                 ],
               ),
             ),
 
-          // Lista de serviços
           Expanded(
             child: _servicosFiltrados.isEmpty
                 ? Center(
@@ -475,7 +469,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -485,27 +479,25 @@ class _ServicosScreenState extends State<ServicosScreen> {
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               children: [
-                                // Ícone do serviço
                                 Container(
                                   width: 50,
                                   height: 50,
                                   decoration: BoxDecoration(
-                                    color: AppColors.rosaPrincipal.withOpacity(0.2),
+                                    color: AppColors.rosaPrincipal.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(color: AppColors.rosaPrincipal.withOpacity(0.3)),
+                                    border: Border.all(color: AppColors.rosaPrincipal.withValues(alpha: 0.3)),
                                   ),
-                                  child: Icon(Icons.favorite, color: AppColors.textoEscuro, size: 24),
+                                  child: const Icon(Icons.favorite, color: AppColors.textoEscuro, size: 24),
                                 ),
                                 const SizedBox(width: 16),
 
-                                // Informações do serviço
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         servico.nome,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textoEscuro,
@@ -568,14 +560,13 @@ class _ServicosScreenState extends State<ServicosScreen> {
                                 ),
                                 const SizedBox(width: 8),
 
-                                // Ícone de mais opções
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.rosaPrincipal.withOpacity(0.1),
+                                    color: AppColors.rosaPrincipal.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
+                                  child: const Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
                                 ),
                               ],
                             ),

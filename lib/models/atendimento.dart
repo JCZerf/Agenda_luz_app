@@ -79,10 +79,16 @@ class Atendimento {
     );
   }
 
-  // Verifica se este atendimento deve ser marcado como concluído automaticamente
-  bool get deveSerConcluido {
-    final agora = DateTime.now();
-    final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-    return agora.isAfter(duasHorasDepois);
+  static const int duracaoPadraoMinutos = 120;
+
+  static bool deveSerConcluidoEm(
+    DateTime dataHora,
+    int? tempoEstimadoMinutos, {
+    DateTime? agora,
+  }) {
+    final fim = dataHora.add(Duration(minutes: tempoEstimadoMinutos ?? duracaoPadraoMinutos));
+    return (agora ?? DateTime.now()).isAfter(fim);
   }
+
+  bool get deveSerConcluido => deveSerConcluidoEm(dataHora, tempoEstimadoMinutos);
 }

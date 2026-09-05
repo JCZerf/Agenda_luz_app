@@ -22,29 +22,40 @@ class DatabaseHelper {
   Future<Database> _initDb() async {
     final path = join(await getDatabasesPath(), 'agendaluz_v5.db');
 
-    return await openDatabase(path, version: 5, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 6, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   Future<void> marcarAtendimentosConcluidosAutomaticamente() async {
     final dbClient = await db;
-    // Marca como concluído apenas atendimentos que passaram 2 horas do horário marcado
-    // E que não foram reagendados para o futuro
-    final duasHorasAtras = DateTime.now().subtract(const Duration(hours: 2)).toIso8601String();
-    final agora = DateTime.now().toIso8601String();
-
-    await dbClient.update(
+    final candidatos = await dbClient.query(
       'atendimentos',
-      {'concluido': 1},
-      where: 'data_hora < ? AND data_hora < ? AND concluido = 0',
-      whereArgs: [duasHorasAtras, agora],
+      where: 'concluido = 0 AND reaberto_manual = 0',
     );
-  }
 
-  // Verifica se um atendimento deve ser marcado como concluído automaticamente
-  bool deveSerConcluido(DateTime dataHoraAtendimento) {
     final agora = DateTime.now();
-    final duasHorasDepois = dataHoraAtendimento.add(const Duration(hours: 2));
-    return agora.isAfter(duasHorasDepois);
+
+    for (final row in candidatos) {
+      final atendimento = Atendimento.fromMap(row);
+      if (!Atendimento.deveSerConcluidoEm(
+        atendimento.dataHora,
+        atendimento.tempoEstimadoMinutos,
+        agora: agora,
+      )) {
+        continue;
+      }
+
+      await dbClient.update(
+        'atendimentos',
+        {'concluido': 1, 'pago': 1},
+        where: 'id = ?',
+        whereArgs: [atendimento.id],
+      );
+
+      final jaExiste = await movimentacaoExisteParaAtendimento(atendimento.id!);
+      if (!jaExiste) {
+        await inserirMovimentacaoAutomatica(atendimento.copyWith(pago: true));
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -70,6 +81,7 @@ class DatabaseHelper {
         concluido INTEGER DEFAULT 0,
         servico_id INTEGER,
         tempo_estimado_minutos INTEGER,
+        reaberto_manual INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (servico_id) REFERENCES servicos (id)
       )
     ''');
@@ -125,9 +137,14 @@ class DatabaseHelper {
       await db.execute("ALTER TABLE atendimentos ADD COLUMN servico_id INTEGER");
       await db.execute("ALTER TABLE atendimentos ADD COLUMN tempo_estimado_minutos INTEGER");
     }
+
+    if (oldVersion < 6) {
+      await db.execute(
+        "ALTER TABLE atendimentos ADD COLUMN reaberto_manual INTEGER NOT NULL DEFAULT 0",
+      );
+    }
   }
 
-  // ===================== CRUD Atendimentos =====================
 
   Future<int> inserirAtendimento(Atendimento a) async {
     final dbClient = await db;
@@ -143,7 +160,6 @@ class DatabaseHelper {
       );
     }
 
-    // Verifica se deve criar movimentação automática
     if (a.pago) {
       final atendimentoComId = a.copyWith(id: id);
       final jaExiste = await movimentacaoExisteParaAtendimento(id);
@@ -152,7 +168,6 @@ class DatabaseHelper {
       }
     }
 
-    // Agenda notificações para o atendimento
     final atendimentoComId = a.copyWith(id: id);
     await NotificationService.agendarNotificacoesAtendimento(atendimentoComId);
 
@@ -198,17 +213,25 @@ class DatabaseHelper {
       limit: 1,
     );
     final eraPago = anterior.isNotEmpty ? (anterior.first['pago'] == 1) : false;
+    final eraConcluido = anterior.isNotEmpty ? (anterior.first['concluido'] == 1) : false;
+    final dataAnterior = anterior.isNotEmpty ? anterior.first['data_hora'] as String? : null;
+    final dataFoiReagendada = dataAnterior != a.dataHora.toIso8601String();
 
-    // Verifica se a data é futura => então o atendimento não deve estar concluído
     final agora = DateTime.now();
     final atendimentoCorrigido = a.copyWith(
       concluido: a.dataHora.isAfter(agora) ? false : a.concluido,
     );
 
-    // Atualiza o banco com o atendimento corrigido
+    final dadosAtualizacao = atendimentoCorrigido.toMap();
+    if (dataFoiReagendada) {
+      dadosAtualizacao['reaberto_manual'] = 0;
+    } else if (eraConcluido && !a.concluido) {
+      dadosAtualizacao['reaberto_manual'] = 1;
+    }
+
     final resultado = await dbClient.update(
       'atendimentos',
-      atendimentoCorrigido.toMap(),
+      dadosAtualizacao,
       where: 'id = ?',
       whereArgs: [a.id],
     );
@@ -230,7 +253,6 @@ class DatabaseHelper {
       }
     }
 
-    // Reagenda notificações para o atendimento
     await NotificationService.agendarNotificacoesAtendimento(atendimentoCorrigido);
 
     return resultado;
@@ -279,13 +301,11 @@ class DatabaseHelper {
   Future<int> deletarAtendimento(int id) async {
     final dbClient = await db;
 
-    // Cancela notificações relacionadas ao atendimento
     await NotificationService.cancelarNotificacoesAtendimento(id);
 
     return await dbClient.delete('atendimentos', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ===================== CRUD Clientes =====================
 
   Future<int> inserirCliente(Cliente c) async {
     final dbClient = await db;
@@ -308,7 +328,6 @@ class DatabaseHelper {
     return await dbClient.delete('clientes', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Buscar último atendimento concluído do cliente
   Future<DateTime?> buscarUltimoAtendimentoConcluido(int clienteId) async {
     final dbClient = await db;
     final resultado = await dbClient.query(
@@ -331,7 +350,6 @@ class DatabaseHelper {
     }
   }
 
-  // Buscar próximo agendamento futuro do cliente
   Future<DateTime?> buscarProximoAgendamento(int clienteId) async {
     final dbClient = await db;
     final agora = DateTime.now().toIso8601String();
@@ -355,7 +373,6 @@ class DatabaseHelper {
     }
   }
 
-  // ===================== CRUD Movimentações =====================
 
   Future<int> inserirMovimentacao(MovimentacaoFinanceira m) async {
     final dbClient = await db;
@@ -383,7 +400,6 @@ class DatabaseHelper {
     return await dbClient.delete('movimentacoes_financeiras', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ===================== Previsão de Receita =====================
 
   Future<List<Atendimento>> listarAtendimentosNaoPagos() async {
     final dbClient = await db;
@@ -404,7 +420,6 @@ class DatabaseHelper {
     return atendimentos.fold<double>(0.0, (total, atendimento) => total + atendimento.valor);
   }
 
-  // ===================== CRUD Serviços =====================
 
   Future<int> inserirServico(Servico servico) async {
     final dbClient = await db;
@@ -454,7 +469,6 @@ class DatabaseHelper {
     return result.first['count'] as int;
   }
 
-  // ===================== Relatórios de Serviços =====================
 
   Future<Map<String, dynamic>> relatorioMensalServicos({required DateTime mes}) async {
     final dbClient = await db;
@@ -465,7 +479,6 @@ class DatabaseHelper {
     final inicioMesStr = inicioMes.toIso8601String();
     final fimMesStr = fimMes.toIso8601String();
 
-    // Buscar atendimentos concluídos do mês com informações do serviço
     final atendimentos = await dbClient.rawQuery(
       '''
       SELECT a.*, s.nome as nome_servico
@@ -477,7 +490,6 @@ class DatabaseHelper {
       [inicioMesStr, fimMesStr],
     );
 
-    // Contar serviços por tipo
     final Map<String, int> servicosPorTipo = {};
     int totalServicos = 0;
     double valorTotal = 0.0;
@@ -497,25 +509,21 @@ class DatabaseHelper {
     };
   }
 
-  // ===================== Estatísticas Financeiras para Dashboard =====================
 
   Future<Map<String, dynamic>> obterEstatisticasFinanceiras(DateTime mes) async {
     final dbClient = await db;
     
-    // Definir o intervalo do mês atual
     final inicioMes = DateTime(mes.year, mes.month, 1);
     final fimMes = DateTime(mes.year, mes.month + 1, 0, 23, 59, 59);
     final inicioMesStr = inicioMes.toIso8601String();
     final fimMesStr = fimMes.toIso8601String();
     
-    // Mês anterior para comparação
     final mesAnterior = DateTime(mes.year, mes.month - 1, 1);
     final inicioMesAnterior = DateTime(mesAnterior.year, mesAnterior.month, 1);
     final fimMesAnterior = DateTime(mesAnterior.year, mesAnterior.month + 1, 0, 23, 59, 59);
     final inicioMesAnteriorStr = inicioMesAnterior.toIso8601String();
     final fimMesAnteriorStr = fimMesAnterior.toIso8601String();
     
-    // 1. Calcular receitas e despesas do mês atual
     final movimentacoes = await dbClient.query(
       'movimentacoes_financeiras',
       where: 'data >= ? AND data <= ?',
@@ -536,7 +544,6 @@ class DatabaseHelper {
       }
     }
     
-    // 2. Calcular receita do mês anterior
     final movimentacoesAnterior = await dbClient.query(
       'movimentacoes_financeiras',
       where: 'data >= ? AND data <= ? AND tipo = ?',
@@ -551,7 +558,6 @@ class DatabaseHelper {
       receitaMesAnterior += valor;
     }
     
-    // 3. Calcular atendimentos
     final atendimentos = await dbClient.query(
       'atendimentos',
       where: 'data_hora >= ? AND data_hora <= ?',
@@ -569,7 +575,6 @@ class DatabaseHelper {
     int atendimentosPendentes = totalAtendimentos - atendimentosConcluidos;
     int atendimentosMesAnterior = atendimentosAnterior.length;
     
-    // 4. Clientes únicos atendidos
     final clientesAtendidos = <int>{};
     for (final atendimento in atendimentos) {
       final clienteId = atendimento['cliente_id'];
@@ -578,19 +583,15 @@ class DatabaseHelper {
       }
     }
     
-    // 5. Ticket médio
     double ticketMedio = totalAtendimentos > 0 ? receita / totalAtendimentos : 0.0;
     
-    // 6. Taxa de conclusão
     double taxaConclusao = totalAtendimentos > 0 
         ? (atendimentosConcluidos / totalAtendimentos) * 100 
         : 0.0;
     
-    // 7. Média diária de receita
     final diasNoMes = fimMes.day;
     double mediaDiariaReceita = receita / diasNoMes;
     
-    // 8. Top 5 serviços mais realizados
     final atendimentosConcuidosComServico = await dbClient.rawQuery(
       '''
       SELECT s.nome, COUNT(*) as quantidade, SUM(a.valor) as receita_total
@@ -614,7 +615,6 @@ class DatabaseHelper {
       };
     }).toList();
     
-    // 9. Previsão de receita (atendimentos não pagos)
     final previsaoReceita = await calcularPrevisaoReceita(mes: mes);
     
     return {
