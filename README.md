@@ -5,7 +5,7 @@ Aplicativo Flutter para gestão de agenda, clientes, serviços e financeiro de p
 ## Estado atual do app
 
 - Nome do app: `AgendALuz`
-- Versão atual: `1.4.2+17` (conforme `pubspec.yaml`)
+- Versão atual: lida dinamicamente via `package_info_plus` (definida em `pubspec.yaml`, hoje `1.5.0+18`)
 - Plataforma: Flutter (Android/iOS)
 - Idioma padrão: `pt_BR`
 - Persistência local: SQLite (`agendaluz_v5.db`)
@@ -21,14 +21,16 @@ Aplicativo Flutter para gestão de agenda, clientes, serviços e financeiro de p
 - Criação de agendamento em dois modos:
   - Com cliente cadastrado
   - Sem cliente cadastrado (`nome_livre`)
+- Status de pagamento oculto na criação (todo agendamento novo nasce como "não pago"); o toggle Pago/Não Pago só aparece ao editar
 - Edição, visualização de detalhes e exclusão (inclusive com `Dismissible`)
-- Conclusão automática de atendimentos passados em mais de 2 horas
-- Conclusão manual de atendimento pendente
+- Conclusão automática de atendimentos após o tempo estimado do serviço (ou 120 min como padrão, quando não há serviço/duração definida), marcando `concluido` e `pago` juntos e criando a movimentação financeira automática
+- Conclusão manual de atendimento pendente (também marca como pago)
+- Desmarcar um atendimento concluído impede que a conclusão automática o marque de novo, até a data ser reagendada
 
 ### Atendimentos
 
 - Tela dedicada para atendimentos concluídos
-- Considera concluídos explícitos e auto-concluídos (2h+)
+- Considera concluídos explícitos e auto-concluídos (pelo tempo estimado do serviço)
 - Filtro por mês
 - Busca por nome da cliente
 - Total de valor dos atendimentos listados no período
@@ -39,8 +41,10 @@ Aplicativo Flutter para gestão de agenda, clientes, serviços e financeiro de p
 - Cadastro, edição e exclusão com confirmação
 - Formatação de telefone no formulário
 - Busca por nome
-- Exibição de último atendimento (`historico`)
-- Tags de relacionamento por recência do último atendimento (ex.: Recente, Em rotina, Agendar logo)
+- Exibição de último atendimento (`historico`) e do próximo agendamento
+- Tags de relacionamento por recência do último atendimento
+- Clientes sem atendimento concluído há 40+ dias (e sem agendamento futuro) ficam ocultas da lista por padrão, com opção de mostrar/ocultar e selo "Inativa"
+- Lembrete de Agendamento: envia mensagem pelo WhatsApp convidando a cliente a agendar o próximo horário, citando há quanto tempo foi o último atendimento
 
 ### Serviços
 
@@ -57,7 +61,8 @@ Aplicativo Flutter para gestão de agenda, clientes, serviços e financeiro de p
 ### Financeiro
 
 - Registro de movimentações manuais (receita/despesa)
-- Movimentação automática para atendimento pago
+- Movimentação automática para atendimento pago (manual ou por conclusão automática)
+- Dashboard financeiro com estatísticas do mês (receita, despesas, atendimentos, ticket médio, taxa de conclusão, top serviços)
 - Resumo mensal com:
   - Receita
   - Despesas
@@ -68,23 +73,17 @@ Aplicativo Flutter para gestão de agenda, clientes, serviços e financeiro de p
 
 ### Notificações
 
-- Inicialização de notificações locais na abertura do app
-- Agendamento automático por atendimento futuro:
-  - 2 dias antes
-  - 1 dia antes
-  - 2 horas antes
-- Reagendamento global de notificações
-- Cancelamento global de notificações
-- Tela de gerenciamento com listagem de notificações pendentes
-- Notificação de teste imediata
+- Lembretes de atendimento totalmente configuráveis: uma lista de antecedências (1 semana, 3 dias, 2 dias, 1 dia, 3h, 2h, 1h, 30min antes) com toggle individual, mais um interruptor geral para ligar/desligar tudo
+- Configurações persistidas com `shared_preferences`; reagendamento acontece automaticamente sempre que alguma opção muda
+- Notificação existe apenas para lembrar a profissional do atendimento (não envia nada à cliente)
 
 ### Backup e restauração
 
 - Backup automático na inicialização do app
 - Backup manual em JSON com compartilhamento (`share_plus`)
-- Listagem de backups locais salvos no diretório da aplicação
-- Restauração de backup com confirmação e backup de segurança prévio
-- Opção de restauração por caminho de arquivo
+- Restauração via seletor de arquivos nativo do Android (SAF, `file_picker`), sem precisar digitar caminho
+- Restauração roda em uma única transação (reverte tudo se algo falhar no meio) e cria um backup de segurança antes de sobrescrever os dados
+- Metadados do backup (`app_version`) gravados dinamicamente via `package_info_plus`
 
 ## Navegação principal
 
@@ -105,6 +104,7 @@ Rotas nomeadas em `MaterialApp`:
 - `/servico_form`
 - `/notifications`
 - `/configuracoes`
+- `/dashboard_financeiro`
 
 ## Estrutura técnica
 
@@ -113,6 +113,7 @@ Rotas nomeadas em `MaterialApp`:
 - `lib/screens/`: telas e formulários
 - `lib/services/`:
   - `notification_service.dart`
+  - `notification_settings_service.dart`
   - `backup_service.dart`
 - `lib/utils/`: componentes auxiliares
 
@@ -126,10 +127,13 @@ Principais pacotes:
 - `path_provider`
 - `share_plus`
 - `package_info_plus`
+- `url_launcher`
+- `file_picker`
+- `shared_preferences`
 
 ## Banco de dados (SQLite)
 
-Versão do schema: `5`
+Versão do schema: `6`
 Arquivo: `agendaluz_v5.db`
 
 ### Tabela `clientes`
@@ -156,6 +160,9 @@ Arquivo: `agendaluz_v5.db`
 | concluido               | INTEGER (0 ou 1)   |
 | servico_id              | INTEGER (nullable) |
 | tempo_estimado_minutos  | INTEGER (nullable) |
+| reaberto_manual         | INTEGER (0 ou 1)   |
+
+`reaberto_manual` marca um atendimento que a usuária desmarcou manualmente como concluído, impedindo que a rotina automática o marque de volta até a data ser reagendada.
 
 ### Tabela `movimentacoes_financeiras`
 
@@ -187,7 +194,4 @@ flutter pub get
 flutter run
 ```
 
-## Observações
 
-- O app inclui telas de configurações para backup e notificações.
-- O projeto possui classes legadas (`agendamento.dart` e `atedimento_Com_Cliente.dart`) que não são o modelo principal atualmente.
