@@ -22,19 +22,18 @@ class DatabaseHelper {
   Future<Database> _initDb() async {
     final path = join(await getDatabasesPath(), 'agendaluz_v5.db');
 
-    return await openDatabase(path, version: 5, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 6, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   Future<void> marcarAtendimentosConcluidosAutomaticamente() async {
     final dbClient = await db;
     final duasHorasAtras = DateTime.now().subtract(const Duration(hours: 2)).toIso8601String();
-    final agora = DateTime.now().toIso8601String();
 
     await dbClient.update(
       'atendimentos',
       {'concluido': 1},
-      where: 'data_hora < ? AND data_hora < ? AND concluido = 0',
-      whereArgs: [duasHorasAtras, agora],
+      where: 'data_hora < ? AND concluido = 0 AND reaberto_manual = 0',
+      whereArgs: [duasHorasAtras],
     );
   }
 
@@ -67,6 +66,7 @@ class DatabaseHelper {
         concluido INTEGER DEFAULT 0,
         servico_id INTEGER,
         tempo_estimado_minutos INTEGER,
+        reaberto_manual INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (servico_id) REFERENCES servicos (id)
       )
     ''');
@@ -121,6 +121,12 @@ class DatabaseHelper {
     if (oldVersion < 5) {
       await db.execute("ALTER TABLE atendimentos ADD COLUMN servico_id INTEGER");
       await db.execute("ALTER TABLE atendimentos ADD COLUMN tempo_estimado_minutos INTEGER");
+    }
+
+    if (oldVersion < 6) {
+      await db.execute(
+        "ALTER TABLE atendimentos ADD COLUMN reaberto_manual INTEGER NOT NULL DEFAULT 0",
+      );
     }
   }
 
@@ -192,15 +198,25 @@ class DatabaseHelper {
       limit: 1,
     );
     final eraPago = anterior.isNotEmpty ? (anterior.first['pago'] == 1) : false;
+    final eraConcluido = anterior.isNotEmpty ? (anterior.first['concluido'] == 1) : false;
+    final dataAnterior = anterior.isNotEmpty ? anterior.first['data_hora'] as String? : null;
+    final dataFoiReagendada = dataAnterior != a.dataHora.toIso8601String();
 
     final agora = DateTime.now();
     final atendimentoCorrigido = a.copyWith(
       concluido: a.dataHora.isAfter(agora) ? false : a.concluido,
     );
 
+    final dadosAtualizacao = atendimentoCorrigido.toMap();
+    if (dataFoiReagendada) {
+      dadosAtualizacao['reaberto_manual'] = 0;
+    } else if (eraConcluido && !a.concluido) {
+      dadosAtualizacao['reaberto_manual'] = 1;
+    }
+
     final resultado = await dbClient.update(
       'atendimentos',
-      atendimentoCorrigido.toMap(),
+      dadosAtualizacao,
       where: 'id = ?',
       whereArgs: [a.id],
     );

@@ -236,12 +236,11 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
               _buildSecaoValor(),
               const SizedBox(height: 20),
 
-              _buildSecaoStatusPagamento(),
-              const SizedBox(height: 20),
-
               _buildSecaoObservacoes(),
 
               if (agendamentoEdicao != null) ...[
+                const SizedBox(height: 20),
+                _buildSecaoStatusPagamento(),
                 const SizedBox(height: 20),
                 _buildSecaoStatusConclusao(),
               ],
