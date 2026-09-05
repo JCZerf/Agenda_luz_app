@@ -13,8 +13,6 @@ class AgendamentoFormScreen extends StatefulWidget {
   State<AgendamentoFormScreen> createState() => _AgendamentoFormScreenState();
 }
 
-bool _dadosIniciaisCarregados = false;
-
 class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final nomeLivreController = TextEditingController();
@@ -32,6 +30,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   TimeOfDay? horaSelecionada;
   bool pago = false;
   bool _salvando = false;
+  bool _dadosIniciaisCarregados = false;
 
   Atendimento? agendamentoEdicao;
 
