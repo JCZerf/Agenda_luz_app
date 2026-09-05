@@ -59,11 +59,9 @@ class _ClientesScreenState extends State<ClientesScreen> {
   }
 
   Future<Map<String, dynamic>> _obterTagCliente(Cliente cliente) async {
-    // Busca o próximo agendamento futuro
     final proximoAgendamento = await DatabaseHelper().buscarProximoAgendamento(cliente.id!);
     final temAgendamento = proximoAgendamento != null;
     
-    // Busca o último atendimento CONCLUÍDO do cliente
     final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
     
     if (ultimoAtendimento == null) {
@@ -72,7 +70,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
         'dias': null,
         'temAgendamento': temAgendamento,
         'cor': AppColors.rosaPrincipal, 
-        'corFundo': AppColors.rosaPrincipal.withOpacity(0.1)
+        'corFundo': AppColors.rosaPrincipal.withValues(alpha: 0.1)
       };
     }
 
@@ -93,7 +91,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
       'dias': diasAtras,
       'temAgendamento': temAgendamento,
       'cor': AppColors.rosaPrincipal,
-      'corFundo': AppColors.rosaPrincipal.withOpacity(0.1)
+      'corFundo': AppColors.rosaPrincipal.withValues(alpha: 0.1)
     };
   }
 
@@ -110,10 +108,8 @@ class _ClientesScreenState extends State<ClientesScreen> {
   }
 
   Future<void> _abrirWhatsApp(String telefone) async {
-    // Remove caracteres não numéricos
     final numeroLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
     
-    // Adiciona código do país se não tiver
     final numeroCompleto = numeroLimpo.startsWith('55') ? numeroLimpo : '55$numeroLimpo';
     
     final mensagem = Uri.encodeComponent('Olá! Gostaria de agendar um horário.');
@@ -206,10 +202,8 @@ class _ClientesScreenState extends State<ClientesScreen> {
   }
 
   void _mostrarDetalhes(Cliente cliente) async {
-    // Buscar o último atendimento concluído
     final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
     
-    // Buscar o próximo agendamento
     final proximoAgendamento = await DatabaseHelper().buscarProximoAgendamento(cliente.id!);
     
     final textoUltimoAtendimento = ultimoAtendimento != null
@@ -243,14 +237,13 @@ class _ClientesScreenState extends State<ClientesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header com foto/avatar
                     Center(
                       child: Column(
                         children: [
                           Container(
                             width: 80,
                             height: 80,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
                                   AppColors.rosaPrincipal,
@@ -275,7 +268,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                           const SizedBox(height: 12),
                           Text(
                             cliente.nome,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textoEscuro,
@@ -287,7 +280,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     ),
                     const SizedBox(height: 24),
                     
-                    // Informações em cards
                     _buildInfoCard(
                       Icons.phone,
                       'Telefone',
@@ -323,7 +315,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     
                     const SizedBox(height: 24),
                     
-                    // Botões de ação
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -356,11 +347,11 @@ class _ClientesScreenState extends State<ClientesScreen> {
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  icon: Icon(Icons.edit, color: AppColors.textoEscuro),
+                                  icon: const Icon(Icons.edit, color: AppColors.textoEscuro),
                                   label: const Text('Editar'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.textoEscuro,
-                                    side: BorderSide(color: AppColors.rosaPrincipal),
+                                    side: const BorderSide(color: AppColors.rosaPrincipal),
                                     padding: const EdgeInsets.symmetric(vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -443,10 +434,10 @@ class _ClientesScreenState extends State<ClientesScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: corDestaque != null ? cor.withOpacity(0.05) : AppColors.rosaClaro,
+          color: corDestaque != null ? cor.withValues(alpha: 0.05) : AppColors.rosaClaro,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: cor.withOpacity(0.3),
+            color: cor.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -456,7 +447,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: cor.withOpacity(0.2),
+                color: cor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -474,14 +465,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
                     titulo,
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textoEscuro.withOpacity(0.6),
+                      color: AppColors.textoEscuro.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     valor,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       color: AppColors.textoEscuro,
                       fontWeight: FontWeight.w600,
@@ -512,22 +503,20 @@ class _ClientesScreenState extends State<ClientesScreen> {
       ),
       body: Column(
         children: [
-          // Informações gerais
           Container(
             padding: const EdgeInsets.all(16),
             color: AppColors.rosaClaro,
             child: Row(
               children: [
-                Icon(Icons.people, color: AppColors.textoEscuro, size: 20),
+                const Icon(Icons.people, color: AppColors.textoEscuro, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Total de clientes: ${_clientes.length}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
                 ),
               ],
             ),
           ),
-          // Campo de busca
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -538,14 +527,14 @@ class _ClientesScreenState extends State<ClientesScreen> {
               controller: _controladorBusca,
               decoration: InputDecoration(
                 hintText: 'Buscar cliente por nome...',
-                prefixIcon: Icon(Icons.search, color: AppColors.textoEscuro),
+                prefixIcon: const Icon(Icons.search, color: AppColors.textoEscuro),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.rosaPrincipal),
+                  borderSide: const BorderSide(color: AppColors.rosaPrincipal),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.textoEscuro),
+                  borderSide: const BorderSide(color: AppColors.textoEscuro),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -570,23 +559,21 @@ class _ClientesScreenState extends State<ClientesScreen> {
               },
             ),
           ),
-          // Informações do filtro
           if (_textoBusca.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.rosaPrincipal.withOpacity(0.1),
+              color: AppColors.rosaPrincipal.withValues(alpha: 0.1),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
+                  const Icon(Icons.info_outline, size: 16, color: AppColors.textoEscuro),
                   const SizedBox(width: 8),
                   Text(
                     '${_clientesFiltrados.length} cliente(s) encontrada(s)',
-                    style: TextStyle(fontSize: 12, color: AppColors.textoEscuro),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textoEscuro),
                   ),
                 ],
               ),
             ),
-          // Lista de clientes
           Expanded(
             child: _clientesFiltrados.isEmpty
                 ? Center(
@@ -628,7 +615,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -638,19 +625,18 @@ class _ClientesScreenState extends State<ClientesScreen> {
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               children: [
-                                // Avatar com inicial do nome
                                 Container(
                                   width: 50,
                                   height: 50,
                                   decoration: BoxDecoration(
-                                    color: AppColors.rosaPrincipal.withOpacity(0.2),
+                                    color: AppColors.rosaPrincipal.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(color: AppColors.rosaPrincipal.withOpacity(0.3)),
+                                    border: Border.all(color: AppColors.rosaPrincipal.withValues(alpha: 0.3)),
                                   ),
                                   child: Center(
                                     child: Text(
                                       cliente.nome.isNotEmpty ? cliente.nome[0].toUpperCase() : 'C',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.textoEscuro,
@@ -659,14 +645,13 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 16),
-                                // Informações da cliente
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         cliente.nome,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textoEscuro,
@@ -705,7 +690,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 6),
-                                      // Tag do cliente
                                       Row(
                                         children: [
                                           FutureBuilder<Map<String, dynamic>>(
@@ -757,7 +741,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                                         vertical: 3,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.green.withOpacity(0.1),
+                                                        color: Colors.green.withValues(alpha: 0.1),
                                                         borderRadius: BorderRadius.circular(12),
                                                         border: Border.all(color: Colors.green, width: 1),
                                                       ),
@@ -781,14 +765,13 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                // Ícone de mais opções
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.rosaPrincipal.withOpacity(0.1),
+                                    color: AppColors.rosaPrincipal.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
+                                  child: const Icon(Icons.more_vert, color: AppColors.textoEscuro, size: 20),
                                 ),
                               ],
                             ),

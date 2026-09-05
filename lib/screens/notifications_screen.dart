@@ -87,7 +87,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (payload == null) return 'Desconhecido';
 
     try {
-      // Aqui você pode parsear o payload JSON para extrair informações
       if (payload.contains('dois_dias_antes')) {
         return '2 dias antes';
       } else if (payload.contains('um_dia_antes')) {
@@ -115,7 +114,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         color: AppColors.rosaClaro,
         child: Column(
           children: [
-            // Botões de ação
             Container(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -164,22 +162,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
 
-            // Informações
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.textoEscuro),
+                  const Icon(Icons.info_outline, color: AppColors.textoEscuro),
                   const SizedBox(width: 8),
                   Text(
                     'Notificações pendentes: ${_notificacoesPendentes.length}',
-                    style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.w600),
+                    style: const TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
             ),
 
-            // Lista de notificações
             Expanded(
               child: _carregando
                   ? const Center(child: CircularProgressIndicator())
@@ -215,7 +211,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -226,14 +222,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: AppColors.rosaPrincipal.withOpacity(0.2),
+                                color: AppColors.rosaPrincipal.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Icon(Icons.notifications, color: AppColors.textoEscuro),
+                              child: const Icon(Icons.notifications, color: AppColors.textoEscuro),
                             ),
                             title: Text(
                               notificacao.title ?? 'Sem título',
-                              style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
+                              style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textoEscuro),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +241,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   'Tipo: ${_formatarTipoNotificacao(notificacao.payload)}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: AppColors.rosaPrincipal,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,

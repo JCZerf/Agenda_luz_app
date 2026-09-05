@@ -104,7 +104,6 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
       ),
       body: Column(
         children: [
-          // Header com seletor de mês
           Container(
             color: Colors.white,
             child: Column(
@@ -141,18 +140,16 @@ class _FinanceiroScreenState extends State<FinanceiroScreen> {
           
           const SizedBox(height: 16),
           
-          // Card de resumo melhorado
           _ResumoFinanceiroCard(movimentacoes: listaFiltrada, previsaoReceita: _previsaoReceita),
           
           const SizedBox(height: 16),
           
-          // Header da lista
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'Movimentações',
                   style: TextStyle(
                     fontSize: 18,
@@ -380,7 +377,7 @@ class _ResumoFinanceiroCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [AppColors.rosaPrincipal, AppColors.rosaMedio],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -388,7 +385,7 @@ class _ResumoFinanceiroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.rosaPrincipal.withOpacity(0.3),
+            color: AppColors.rosaPrincipal.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -398,7 +395,6 @@ class _ResumoFinanceiroCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Saldo principal - compacto
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -425,7 +421,6 @@ class _ResumoFinanceiroCard extends StatelessWidget {
             const Divider(color: Colors.white38, height: 1),
             const SizedBox(height: 12),
             
-            // Receitas, Despesas e Previsão em linha
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [

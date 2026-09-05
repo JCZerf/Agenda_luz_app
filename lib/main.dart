@@ -17,21 +17,17 @@ import 'screens/configuracoes_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa o serviço de notificações com tratamento de erro
   try {
     await NotificationService.initialize();
   } catch (e) {
     // Se falhar, continua sem notificações
-    print('Erro ao inicializar notificações: $e');
   }
 
-  // Fazer backup automático na inicialização
   try {
     final backupService = BackupService();
     await backupService.fazerBackupAutomatico();
-    print('Backup automático realizado com sucesso');
   } catch (e) {
-    print('Erro ao fazer backup automático: $e');
+    // Se falhar, continua sem backup automático
   }
 
   await initializeDateFormatting('pt_BR', null);
@@ -64,7 +60,7 @@ class AgendALuzApp extends StatelessWidget {
           primary: AppColors.rosaEscuro,
           secondary: AppColors.rosaMedio,
         ),
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.rosaEscuro,
           foregroundColor: AppColors.textoBranco,
           centerTitle: true,
@@ -75,7 +71,7 @@ class AgendALuzApp extends StatelessWidget {
             color: AppColors.textoBranco,
           ),
         ),
-        textTheme: TextTheme(
+        textTheme: const TextTheme(
           titleLarge: TextStyle(
             color: AppColors.textoEscuro,
             fontSize: 20,
@@ -92,10 +88,10 @@ class AgendALuzApp extends StatelessWidget {
             borderSide: BorderSide.none,
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          hintStyle: TextStyle(color: AppColors.cinza),
+          hintStyle: const TextStyle(color: AppColors.cinza),
           prefixIconColor: AppColors.rosaPrincipal,
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
+        elevatedButtonTheme: const ElevatedButtonThemeData(
           style: ButtonStyle(
             backgroundColor: WidgetStatePropertyAll(AppColors.rosaPrincipal),
             foregroundColor: WidgetStatePropertyAll(AppColors.textoBranco),
@@ -105,11 +101,11 @@ class AgendALuzApp extends StatelessWidget {
             textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: AppColors.rosaPrincipal,
           foregroundColor: AppColors.textoBranco,
         ),
-        iconTheme: IconThemeData(color: AppColors.rosaPrincipal),
+        iconTheme: const IconThemeData(color: AppColors.rosaPrincipal),
       ),
       initialRoute: '/home',
       routes: {

@@ -17,10 +17,8 @@ class MovimentacaoFinanceira {
     this.atendimentoId,
   });
 
-  /// Getter de conveniência para saber se é receita
   bool get isReceita => tipo.toLowerCase() == 'receita';
 
-  /// Conversão para Map (para salvar no banco)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -33,7 +31,6 @@ class MovimentacaoFinanceira {
     };
   }
 
-  /// Conversão de Map para objeto Dart
   factory MovimentacaoFinanceira.fromMap(Map<String, dynamic> map) {
     return MovimentacaoFinanceira(
       id: map['id'] as int?,

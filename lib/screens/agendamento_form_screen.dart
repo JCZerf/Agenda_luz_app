@@ -31,16 +31,16 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   DateTime? dataSelecionada;
   TimeOfDay? horaSelecionada;
   bool pago = false;
-  bool _salvando = false; // Estado para controlar o salvamento
+  bool _salvando = false;
 
   Atendimento? agendamentoEdicao;
-
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    if (_dadosIniciaisCarregados) return; // <-- evita sobrescrever os dados após edição
+    // Evita recarregar/sobrescrever os campos já preenchidos ao reabrir o formulário.
+    if (_dadosIniciaisCarregados) return;
 
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
     if (args != null) {
@@ -63,7 +63,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       }
     }
 
-    _dadosIniciaisCarregados = true; // <-- importante
+    _dadosIniciaisCarregados = true;
     carregarClientes();
   }
 
@@ -120,7 +120,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   }
 
   void _salvar() async {
-    if (_salvando) return; // Previne múltiplos cliques
+    if (_salvando) return;
 
     if (_formKey.currentState!.validate() && dataSelecionada != null && horaSelecionada != null) {
       setState(() {
@@ -155,18 +155,19 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
 
         if (agendamentoEdicao != null) {
           await helper.atualizarAtendimento(novo);
+          if (!mounted) return;
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('Agendamento atualizado com sucesso!')));
         } else {
           final id = await helper.inserirAtendimento(novo);
           novo.id = id;
+          if (!mounted) return;
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('Agendamento salvo com sucesso!')));
         }
 
-        // Lançar no financeiro se pago == true e ainda não houver movimentação automática
         if (pago && novo.id != null) {
           final jaExiste = await helper.movimentacaoExisteParaAtendimento(novo.id!);
           if (!jaExiste) {
@@ -174,7 +175,6 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           }
         }
 
-        // Fechar o formulário retornando true para indicar sucesso
         if (mounted) {
           Navigator.pop(context, true);
         }
@@ -225,30 +225,23 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
             children: [
               const SizedBox(height: 8),
 
-              // Seção de Cliente
               _buildSecaoCliente(),
               const SizedBox(height: 20),
 
-              // Seção de Data e Hora
               _buildSecaoDataHora(),
               const SizedBox(height: 20),
 
-              // Seção de Serviço
               _buildSecaoServico(),
               const SizedBox(height: 20),
 
-              // Seção de Valor
               _buildSecaoValor(),
               const SizedBox(height: 20),
 
-              // Seção de Pagamento
               _buildSecaoStatusPagamento(),
               const SizedBox(height: 20),
 
-              // Seção de Observações
               _buildSecaoObservacoes(),
 
-              // Status de conclusão (apenas para edição)
               if (agendamentoEdicao != null) ...[
                 const SizedBox(height: 20),
                 _buildSecaoStatusConclusao(),
@@ -256,7 +249,6 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
 
               const SizedBox(height: 32),
 
-              // Botão de Salvar
               _buildBotaoSalvar(),
             ],
           ),
@@ -271,7 +263,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -279,10 +271,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.person, color: AppColors.textoEscuro),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Cliente',
                   style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
@@ -292,19 +284,18 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
             const SizedBox(height: 12),
 
             if (modo == 'comCliente') ...[
-              // Dropdown para cliente cadastrada
               DropdownButtonFormField<int>(
                 value: clienteSelecionadoId,
                 decoration: InputDecoration(
                   hintText: 'Selecione uma cliente',
-                  prefixIcon: Icon(Icons.person_search, color: AppColors.textoEscuro),
+                  prefixIcon: const Icon(Icons.person_search, color: AppColors.textoEscuro),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
+                    borderSide: const BorderSide(color: AppColors.rosaPrincipal, width: 2),
                   ),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -316,19 +307,18 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                 validator: (value) => value == null ? 'Selecione uma cliente' : null,
               ),
             ] else ...[
-              // Campo de texto para cliente sem cadastro
               TextFormField(
                 controller: nomeLivreController,
                 decoration: InputDecoration(
                   hintText: 'Nome da cliente',
-                  prefixIcon: Icon(Icons.person_add, color: AppColors.textoEscuro),
+                  prefixIcon: const Icon(Icons.person_add, color: AppColors.textoEscuro),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
+                    borderSide: const BorderSide(color: AppColors.rosaPrincipal, width: 2),
                   ),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -353,7 +343,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -361,10 +351,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.schedule, color: AppColors.textoEscuro),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Data e Horário',
                   style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
@@ -386,7 +376,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today, color: AppColors.textoEscuro, size: 18),
+                          const Icon(Icons.calendar_today, color: AppColors.textoEscuro, size: 18),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -418,7 +408,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.access_time, color: AppColors.textoEscuro, size: 18),
+                          const Icon(Icons.access_time, color: AppColors.textoEscuro, size: 18),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -451,7 +441,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -459,10 +449,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.spa, color: AppColors.textoEscuro),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Tipo de Serviço',
                   style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
@@ -513,7 +503,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       decoration: InputDecoration(
                         labelText: 'Tempo estimado (min)',
                         hintText: 'Ex: 60',
-                        prefixIcon: Icon(Icons.timer, color: AppColors.textoEscuro),
+                        prefixIcon: const Icon(Icons.timer, color: AppColors.textoEscuro),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       style: const TextStyle(fontSize: 13),
@@ -534,7 +524,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -542,10 +532,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.attach_money, color: AppColors.textoEscuro),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Valor do Atendimento',
                   style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
@@ -559,14 +549,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
               decoration: InputDecoration(
                 hintText: 'Digite o valor',
                 prefixText: 'R\$ ',
-                prefixIcon: Icon(Icons.monetization_on, color: AppColors.textoEscuro),
+                prefixIcon: const Icon(Icons.monetization_on, color: AppColors.textoEscuro),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
+                  borderSide: const BorderSide(color: AppColors.rosaPrincipal, width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -590,7 +580,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -598,10 +588,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.payment, color: AppColors.textoEscuro),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Status de Pagamento',
                   style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
@@ -694,7 +684,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -702,10 +692,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.note_alt, color: AppColors.textoEscuro),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Observações (opcional)',
                   style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
@@ -724,7 +714,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
+                  borderSide: const BorderSide(color: AppColors.rosaPrincipal, width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -742,7 +732,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -774,15 +764,15 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: _salvando
-              ? [Colors.grey, Colors.grey.withOpacity(0.8)]
-              : [AppColors.textoEscuro, AppColors.textoEscuro.withOpacity(0.8)],
+              ? [Colors.grey, Colors.grey.withValues(alpha: 0.8)]
+              : [AppColors.textoEscuro, AppColors.textoEscuro.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: _salvando ? Colors.grey.withOpacity(0.3) : AppColors.textoEscuro.withOpacity(0.3),
+            color: _salvando ? Colors.grey.withValues(alpha: 0.3) : AppColors.textoEscuro.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),

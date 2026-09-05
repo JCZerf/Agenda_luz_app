@@ -79,7 +79,6 @@ class Atendimento {
     );
   }
 
-  // Verifica se este atendimento deve ser marcado como concluído automaticamente
   bool get deveSerConcluido {
     final agora = DateTime.now();
     final duasHorasDepois = dataHora.add(const Duration(hours: 2));

@@ -16,7 +16,6 @@ class NotificationService {
 
   static Future<void> initialize() async {
     try {
-      // Inicializa timezone
       tz.initializeTimeZones();
 
       const AndroidInitializationSettings androidSettings = AndroidInitializationSettings(
@@ -34,15 +33,8 @@ class NotificationService {
         iOS: iOSSettings,
       );
 
-      await _notifications.initialize(
-        settings,
-        onDidReceiveNotificationResponse: (NotificationResponse response) async {
-          // Aqui você pode adicionar lógica para quando o usuário toca na notificação
-          debugPrint('Notificação tocada: ${response.payload}');
-        },
-      );
+      await _notifications.initialize(settings);
 
-      // Solicitar permissões no Android 13+
       if (Platform.isAndroid) {
         await _notifications
             .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -51,14 +43,12 @@ class NotificationService {
 
       _isInitialized = true;
     } catch (e) {
-      debugPrint('Erro ao inicializar notificações: $e');
       _isInitialized = false;
     }
   }
 
   static Future<void> agendarNotificacoesAtendimento(Atendimento atendimento) async {
     if (!_isInitialized) {
-      debugPrint('Notificações não inicializadas, pulando agendamento');
       return;
     }
 
@@ -66,17 +56,14 @@ class NotificationService {
       final agora = DateTime.now();
       final dataAtendimento = atendimento.dataHora;
 
-      // Cancelar notificações anteriores para este atendimento
       await cancelarNotificacoesAtendimento(atendimento.id!);
 
-      // Só agenda notificações para atendimentos futuros
       if (dataAtendimento.isBefore(agora)) {
         return;
       }
 
       final corpoNotificacao = await _criarCorpoNotificacao(atendimento, '');
 
-      // Notificação 2 dias antes
       final doisDiasAntes = dataAtendimento.subtract(const Duration(days: 2));
       if (doisDiasAntes.isAfter(agora)) {
         await _agendarNotificacao(
@@ -88,7 +75,6 @@ class NotificationService {
         );
       }
 
-      // Notificação 1 dia antes
       final umDiaAntes = dataAtendimento.subtract(const Duration(days: 1));
       if (umDiaAntes.isAfter(agora)) {
         await _agendarNotificacao(
@@ -100,7 +86,6 @@ class NotificationService {
         );
       }
 
-      // Notificação 2 horas antes
       final duasHorasAntes = dataAtendimento.subtract(const Duration(hours: 2));
       if (duasHorasAntes.isAfter(agora)) {
         await _agendarNotificacao(
@@ -112,7 +97,7 @@ class NotificationService {
         );
       }
     } catch (e) {
-      debugPrint('Erro ao agendar notificações: $e');
+      // falha silenciosa
     }
   }
 
@@ -158,12 +143,8 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
-
-      debugPrint(
-        'Notificação agendada: $titulo para ${DateFormat('dd/MM/yyyy HH:mm').format(dataAgendamento)}',
-      );
     } catch (e) {
-      debugPrint('Erro ao agendar notificação: $e');
+      // falha silenciosa
     }
   }
 
@@ -195,12 +176,11 @@ class NotificationService {
     if (!_isInitialized) return;
 
     try {
-      // Cancela todas as notificações relacionadas a um atendimento
-      await _notifications.cancel(atendimentoId * 10 + 1); // 2 dias antes
-      await _notifications.cancel(atendimentoId * 10 + 2); // 1 dia antes
-      await _notifications.cancel(atendimentoId * 10 + 3); // 2 horas antes
+      await _notifications.cancel(atendimentoId * 10 + 1);
+      await _notifications.cancel(atendimentoId * 10 + 2);
+      await _notifications.cancel(atendimentoId * 10 + 3);
     } catch (e) {
-      debugPrint('Erro ao cancelar notificações: $e');
+      // falha silenciosa
     }
   }
 
@@ -210,7 +190,7 @@ class NotificationService {
     try {
       await _notifications.cancelAll();
     } catch (e) {
-      debugPrint('Erro ao cancelar todas as notificações: $e');
+      // falha silenciosa
     }
   }
 
@@ -218,7 +198,6 @@ class NotificationService {
     if (!_isInitialized) return;
 
     try {
-      // Reagenda notificações para todos os atendimentos futuros
       final atendimentos = await DatabaseHelper().listarAtendimentos();
       final agora = DateTime.now();
 
@@ -228,7 +207,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      debugPrint('Erro ao reagendar notificações: $e');
+      // falha silenciosa
     }
   }
 
@@ -270,7 +249,7 @@ class NotificationService {
         payload: payload,
       );
     } catch (e) {
-      debugPrint('Erro ao mostrar notificação imediata: $e');
+      // falha silenciosa
     }
   }
 
@@ -280,7 +259,6 @@ class NotificationService {
     try {
       return await _notifications.pendingNotificationRequests();
     } catch (e) {
-      debugPrint('Erro ao obter notificações pendentes: $e');
       return [];
     }
   }

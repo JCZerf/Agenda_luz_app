@@ -94,7 +94,7 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Padding(
@@ -108,7 +108,7 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
                 const SizedBox(width: 8),
                 Text(
                   titulo,
-                  style: TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(color: AppColors.textoEscuro, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
@@ -141,7 +141,7 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppColors.rosaPrincipal, width: 2),
+          borderSide: const BorderSide(color: AppColors.rosaPrincipal, width: 2),
         ),
         filled: true,
         fillColor: Colors.grey[50],
@@ -171,7 +171,6 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
             children: [
               const SizedBox(height: 8),
 
-              // Informações Básicas
               _buildSecao(
                 titulo: 'Informações do Serviço',
                 icone: Icons.favorite,
@@ -194,7 +193,6 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
 
               const SizedBox(height: 16),
 
-              // Valores
               _buildSecao(
                 titulo: 'Valores',
                 icone: Icons.monetization_on,
@@ -238,7 +236,6 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
 
               const SizedBox(height: 16),
 
-              // Tempo
               _buildSecao(
                 titulo: 'Duração',
                 icone: Icons.access_time,
@@ -263,20 +260,19 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
 
               const SizedBox(height: 32),
 
-              // Botão Salvar
               Container(
                 width: double.infinity,
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.textoEscuro, AppColors.textoEscuro.withOpacity(0.8)],
+                    colors: [AppColors.textoEscuro, AppColors.textoEscuro.withValues(alpha: 0.8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.textoEscuro.withOpacity(0.3),
+                      color: AppColors.textoEscuro.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),

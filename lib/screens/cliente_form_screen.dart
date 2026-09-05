@@ -10,38 +10,31 @@ class TelefoneFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final text = newValue.text;
 
-    // Remove todos os caracteres não numéricos
     final digitsOnly = text.replaceAll(RegExp(r'[^0-9]'), '');
 
-    // Limita a 11 dígitos (DDD + 9 dígitos)
+    // Limite de 11 dígitos: DDD (2) + celular com o 9º dígito (9).
     final limitedDigits = digitsOnly.length > 11 ? digitsOnly.substring(0, 11) : digitsOnly;
 
     String formatted = '';
 
     if (limitedDigits.isNotEmpty) {
-      // Adiciona parênteses ao DDD
       if (limitedDigits.length >= 2) {
         formatted = '(${limitedDigits.substring(0, 2)})';
 
         if (limitedDigits.length > 2) {
           formatted += ' ';
 
-          // Para números com 11 dígitos (celular com 9)
           if (limitedDigits.length == 11) {
             formatted += limitedDigits.substring(2, 7);
             if (limitedDigits.length > 7) {
               formatted += '-${limitedDigits.substring(7)}';
             }
-          }
-          // Para números com 10 dígitos (fixo)
-          else if (limitedDigits.length == 10) {
+          } else if (limitedDigits.length == 10) {
             formatted += limitedDigits.substring(2, 6);
             if (limitedDigits.length > 6) {
               formatted += '-${limitedDigits.substring(6)}';
             }
-          }
-          // Para números incompletos
-          else {
+          } else {
             final remaining = limitedDigits.substring(2);
             if (remaining.length <= 4) {
               formatted += remaining;
@@ -81,7 +74,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
   final observacoesController = TextEditingController();
 
   Cliente? clienteEdicao;
-  bool _salvando = false; // Estado para controlar o salvamento
+  bool _salvando = false;
 
   @override
   void didChangeDependencies() {
@@ -91,7 +84,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
       clienteEdicao = args['cliente'] as Cliente;
       nomeController.text = clienteEdicao!.nome;
 
-      // Formatar o telefone para exibição
       final telefone = clienteEdicao!.telefone;
       if (telefone.isNotEmpty) {
         telefoneController.text = _formatarTelefone(telefone);
@@ -122,7 +114,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
   }
 
   Future<void> _salvarCliente() async {
-    if (_salvando) return; // Previne múltiplos cliques
+    if (_salvando) return;
 
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -130,15 +122,12 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
       });
 
       try {
-        // Validação adicional para nome
         if (nomeController.text.trim().isEmpty) {
           throw Exception('Nome é obrigatório');
         }
 
-        // Remove formatação do telefone para salvar apenas os dígitos
         final telefoneFormatado = telefoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
-        // Validação do telefone
         if (telefoneFormatado.length < 10) {
           throw Exception('Telefone deve ter pelo menos 10 dígitos');
         }
@@ -153,7 +142,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
           historico: clienteEdicao?.historico, // histórico continua intacto, mas não é editável
         );
 
-        // Operação com timeout
         final operacao = clienteEdicao != null
             ? DatabaseHelper().atualizarCliente(novo)
             : DatabaseHelper().inserirCliente(novo);
@@ -171,7 +159,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
             ),
           );
 
-          // Aguarda um pouco antes de fechar para garantir que o SnackBar seja visto
           await Future.delayed(const Duration(milliseconds: 500));
 
           if (mounted) {
@@ -182,7 +169,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
         if (mounted) {
           String mensagem = 'Erro ao salvar cliente. Tente novamente.';
 
-          // Mensagens específicas para alguns erros
           if (e.toString().contains('Nome é obrigatório')) {
             mensagem = 'Nome é obrigatório';
           } else if (e.toString().contains('Telefone deve ter')) {
@@ -243,14 +229,12 @@ class _ClienteFormScreenState extends State<ClienteFormScreen> {
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         ),
         validator: (value) {
-          // Campo obrigatório apenas para Nome e Telefone
           if (label == 'Nome' || label == 'Telefone') {
             if (value == null || value.trim().isEmpty) {
               return 'Preencha o campo $label';
             }
           }
 
-          // Validação específica para telefone
           if (label == 'Telefone') {
             final digitsOnly = value!.replaceAll(RegExp(r'[^0-9]'), '');
             if (digitsOnly.length < 10) {
