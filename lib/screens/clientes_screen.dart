@@ -14,9 +14,13 @@ class ClientesScreen extends StatefulWidget {
 }
 
 class _ClientesScreenState extends State<ClientesScreen> {
+  static const int _diasInatividade = 40;
+
   List<Cliente> _clientes = [];
   List<Cliente> _clientesFiltrados = [];
+  Map<int, Map<String, dynamic>> _tagsPorCliente = {};
   String _textoBusca = '';
+  bool _mostrarInativas = false;
   final TextEditingController _controladorBusca = TextEditingController();
 
   @override
@@ -27,21 +31,52 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
   Future<void> _carregarClientes() async {
     final lista = await DatabaseHelper().listarClientes();
+
+    final entradas = await Future.wait(
+      lista.map((cliente) async => MapEntry(cliente.id!, await _obterTagCliente(cliente))),
+    );
+
+    if (!mounted) return;
     setState(() {
       _clientes = lista;
+      _tagsPorCliente = Map.fromEntries(entradas);
       _filtrarClientes();
     });
   }
 
+  bool _clienteInativo(Cliente cliente) {
+    final tag = _tagsPorCliente[cliente.id];
+    if (tag == null) return false;
+
+    final dias = tag['dias'] as int?;
+    final temAgendamento = tag['temAgendamento'] as bool? ?? false;
+    return dias != null && dias >= _diasInatividade && !temAgendamento;
+  }
+
+  int get _quantidadeInativas => _clientes.where(_clienteInativo).length;
+
   void _filtrarClientes() {
     setState(() {
-      if (_textoBusca.isEmpty) {
-        _clientesFiltrados = _clientes;
-      } else {
-        _clientesFiltrados = _clientes
-            .where((cliente) => cliente.nome.toLowerCase().contains(_textoBusca.toLowerCase()))
-            .toList();
+      Iterable<Cliente> base = _clientes;
+
+      if (_textoBusca.isNotEmpty) {
+        base = base.where(
+          (cliente) => cliente.nome.toLowerCase().contains(_textoBusca.toLowerCase()),
+        );
       }
+
+      if (!_mostrarInativas) {
+        base = base.where((cliente) => !_clienteInativo(cliente));
+      }
+
+      _clientesFiltrados = base.toList();
+    });
+  }
+
+  void _alternarMostrarInativas() {
+    setState(() {
+      _mostrarInativas = !_mostrarInativas;
+      _filtrarClientes();
     });
   }
 
@@ -592,6 +627,29 @@ class _ClientesScreenState extends State<ClientesScreen> {
               },
             ),
           ),
+          if (_quantidadeInativas > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.grey[100],
+              child: Row(
+                children: [
+                  Icon(Icons.visibility_off, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _mostrarInativas
+                          ? 'Mostrando $_quantidadeInativas cliente(s) sem atendimento há $_diasInatividade+ dias'
+                          : '$_quantidadeInativas cliente(s) sem atendimento há $_diasInatividade+ dias estão ocultas',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _alternarMostrarInativas,
+                    child: Text(_mostrarInativas ? 'Ocultar' : 'Mostrar'),
+                  ),
+                ],
+              ),
+            ),
           if (_textoBusca.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -723,76 +781,81 @@ class _ClientesScreenState extends State<ClientesScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          FutureBuilder<Map<String, dynamic>>(
-                                            future: _obterTagCliente(cliente),
-                                            builder: (context, snapshot) {
-                                              if (!snapshot.hasData) {
-                                                return const SizedBox(
-                                                  width: 80,
-                                                  height: 20,
-                                                  child: Center(
-                                                    child: SizedBox(
-                                                      width: 12,
-                                                      height: 12,
-                                                      child: CircularProgressIndicator(strokeWidth: 1),
+                                      Builder(
+                                        builder: (context) {
+                                          final tag = _tagsPorCliente[cliente.id];
+                                          if (tag == null) return const SizedBox.shrink();
+
+                                          final temAgendamento = tag['temAgendamento'] as bool;
+                                          final inativa = _clienteInativo(cliente);
+
+                                          return Wrap(
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            spacing: 6,
+                                            runSpacing: 4,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 3,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: tag['corFundo'],
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: tag['cor'], width: 1),
+                                                ),
+                                                child: Text(
+                                                  tag['texto'],
+                                                  style: TextStyle(
+                                                    color: tag['cor'],
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (temAgendamento)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    border: Border.all(color: Colors.green, width: 1),
+                                                  ),
+                                                  child: const Text(
+                                                    'Agendado',
+                                                    style: TextStyle(
+                                                      color: Colors.green,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
-                                                );
-                                              }
-                                              
-                                              final tag = snapshot.data!;
-                                              final temAgendamento = tag['temAgendamento'] as bool;
-                                              
-                                              return Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 3,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: tag['corFundo'],
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      border: Border.all(color: tag['cor'], width: 1),
-                                                    ),
-                                                    child: Text(
-                                                      tag['texto'],
-                                                      style: TextStyle(
-                                                        color: tag['cor'],
-                                                        fontSize: 10,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
+                                                ),
+                                              if (inativa)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey[200],
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    border: Border.all(color: Colors.grey[500]!, width: 1),
+                                                  ),
+                                                  child: Text(
+                                                    'Inativa',
+                                                    style: TextStyle(
+                                                      color: Colors.grey[700],
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
-                                                  if (temAgendamento) ...[
-                                                    const SizedBox(width: 6),
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 3,
-                                                      ),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.green.withValues(alpha: 0.1),
-                                                        borderRadius: BorderRadius.circular(12),
-                                                        border: Border.all(color: Colors.green, width: 1),
-                                                      ),
-                                                      child: const Text(
-                                                        'Agendado',
-                                                        style: TextStyle(
-                                                          color: Colors.green,
-                                                          fontSize: 10,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ],
-                                              );
-                                            },
-                                          ),
-                                        ],
+                                                ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
