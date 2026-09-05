@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../database/database_helper.dart';
 import '../models/atendimento.dart';
+import 'notification_settings_service.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
@@ -47,53 +48,51 @@ class NotificationService {
     }
   }
 
+  static final NotificationSettingsService _settings = NotificationSettingsService();
+
   static Future<void> agendarNotificacoesAtendimento(Atendimento atendimento) async {
     if (!_isInitialized) {
       return;
     }
 
     try {
+      await cancelarNotificacoesAtendimento(atendimento.id!);
+
+      if (!await _settings.notificacoesAtivas()) {
+        return;
+      }
+
       final agora = DateTime.now();
       final dataAtendimento = atendimento.dataHora;
-
-      await cancelarNotificacoesAtendimento(atendimento.id!);
 
       if (dataAtendimento.isBefore(agora)) {
         return;
       }
 
+      final offsetsAtivos = await _settings.offsetsAtivos();
+      if (offsetsAtivos.isEmpty) {
+        return;
+      }
+
       final corpoNotificacao = await _criarCorpoNotificacao(atendimento, '');
+      const opcoes = NotificationSettingsService.opcoesDisponiveis;
 
-      final doisDiasAntes = dataAtendimento.subtract(const Duration(days: 2));
-      if (doisDiasAntes.isAfter(agora)) {
-        await _agendarNotificacao(
-          id: atendimento.id! * 10 + 1, // ID único baseado no ID do atendimento
-          titulo: 'Lembrete: Atendimento em 2 dias',
-          corpo: corpoNotificacao,
-          dataAgendamento: doisDiasAntes,
-          payload: jsonEncode({'atendimento_id': atendimento.id, 'tipo': 'dois_dias_antes'}),
-        );
-      }
+      for (var i = 0; i < opcoes.length; i++) {
+        final opcao = opcoes[i];
+        if (!offsetsAtivos.contains(opcao.antecedencia)) continue;
 
-      final umDiaAntes = dataAtendimento.subtract(const Duration(days: 1));
-      if (umDiaAntes.isAfter(agora)) {
-        await _agendarNotificacao(
-          id: atendimento.id! * 10 + 2,
-          titulo: 'Lembrete: Atendimento amanhã',
-          corpo: corpoNotificacao,
-          dataAgendamento: umDiaAntes,
-          payload: jsonEncode({'atendimento_id': atendimento.id, 'tipo': 'um_dia_antes'}),
-        );
-      }
+        final dataAgendamento = dataAtendimento.subtract(opcao.antecedencia);
+        if (!dataAgendamento.isAfter(agora)) continue;
 
-      final duasHorasAntes = dataAtendimento.subtract(const Duration(hours: 2));
-      if (duasHorasAntes.isAfter(agora)) {
         await _agendarNotificacao(
-          id: atendimento.id! * 10 + 3,
-          titulo: 'Atendimento em 2 horas',
+          id: atendimento.id! * 100 + i,
+          titulo: 'Lembrete: Atendimento ${opcao.rotulo}',
           corpo: corpoNotificacao,
-          dataAgendamento: duasHorasAntes,
-          payload: jsonEncode({'atendimento_id': atendimento.id, 'tipo': 'duas_horas_antes'}),
+          dataAgendamento: dataAgendamento,
+          payload: jsonEncode({
+            'atendimento_id': atendimento.id,
+            'antecedencia_minutos': opcao.antecedencia.inMinutes,
+          }),
         );
       }
     } catch (e) {
@@ -176,9 +175,9 @@ class NotificationService {
     if (!_isInitialized) return;
 
     try {
-      await _notifications.cancel(atendimentoId * 10 + 1);
-      await _notifications.cancel(atendimentoId * 10 + 2);
-      await _notifications.cancel(atendimentoId * 10 + 3);
+      for (var i = 0; i < NotificationSettingsService.opcoesDisponiveis.length; i++) {
+        await _notifications.cancel(atendimentoId * 100 + i);
+      }
     } catch (e) {
       // falha silenciosa
     }
@@ -211,55 +210,4 @@ class NotificationService {
     }
   }
 
-  static Future<void> mostrarNotificacaoImediata({
-    required String titulo,
-    required String corpo,
-    String? payload,
-  }) async {
-    if (!_isInitialized) return;
-
-    try {
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'imediato_channel',
-        'Notificações Imediatas',
-        channelDescription: 'Notificações imediatas do sistema',
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-        color: Color(0xFFD9A7B0),
-      );
-
-      const DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
-        sound: 'default',
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const NotificationDetails notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iOSDetails,
-      );
-
-      await _notifications.show(
-        DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        titulo,
-        corpo,
-        notificationDetails,
-        payload: payload,
-      );
-    } catch (e) {
-      // falha silenciosa
-    }
-  }
-
-  static Future<List<PendingNotificationRequest>> obterNotificacoesPendentes() async {
-    if (!_isInitialized) return [];
-
-    try {
-      return await _notifications.pendingNotificationRequests();
-    } catch (e) {
-      return [];
-    }
-  }
 }

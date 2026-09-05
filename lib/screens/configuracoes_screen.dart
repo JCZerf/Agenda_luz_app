@@ -142,7 +142,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
                 Icon(Icons.notifications, color: AppColors.textoEscuro, size: 24),
                 SizedBox(width: 8),
                 Text(
-                  'Notificacoes',
+                  'Notificações',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Gerencie suas notificacoes de atendimentos.',
+              'Escolha quando você quer ser avisada antes de cada atendimento.',
               style: TextStyle(
                 color: AppColors.rosaTextoComOpacidade(0.7),
                 fontSize: 14,
@@ -171,7 +171,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
                   );
                 },
                 icon: const Icon(Icons.notifications_active),
-                label: const Text('Gerenciar Notificacoes'),
+                label: const Text('Configurar Lembretes'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.rosaPrincipalComOpacidade(0.8),
                   foregroundColor: Colors.white,
