@@ -198,9 +198,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final tempoEstimado = a['tempo_estimado_minutos'] as int?;
     final nomeServico = a['nome_servico'] as String?;
 
-    final agora = DateTime.now();
-    final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-    final deveSerConcluido = agora.isAfter(duasHorasDepois) && dataHora.isBefore(agora);
+    final deveSerConcluido = Atendimento.deveSerConcluidoEm(dataHora, tempoEstimado);
 
     String statusTexto;
     Color statusCor;
@@ -343,7 +341,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         icon: const Icon(Icons.check_circle_outline),
                         label: const Text('Concluir'),
                         onPressed: () async {
-                          final atendimento = Atendimento.fromMap(a)..concluido = true;
+                          final atendimento = Atendimento.fromMap(a)
+                            ..concluido = true
+                            ..pago = true;
                           await DatabaseHelper().atualizarAtendimento(atendimento);
                           if (!context.mounted) return;
                           Navigator.pop(context);
@@ -372,9 +372,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   void _mostrarOpcoes(BuildContext context, Map<String, dynamic> agendamento) {
     final dataHora = DateTime.parse(agendamento['data_hora']);
-    final agora = DateTime.now();
-    final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-    final deveSerConcluido = agora.isAfter(duasHorasDepois) && dataHora.isBefore(agora);
+    final tempoEstimado = agendamento['tempo_estimado_minutos'] as int?;
+    final deveSerConcluido = Atendimento.deveSerConcluidoEm(dataHora, tempoEstimado);
     final concluido = agendamento['concluido'] == 1;
 
     showModalBottomSheet(
@@ -398,6 +397,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 Navigator.pop(context);
                 final atendimento = Atendimento.fromMap(agendamento);
                 atendimento.concluido = true;
+                atendimento.pago = true;
 
                 await DatabaseHelper().atualizarAtendimento(atendimento);
                 carregarAgendamentos();
@@ -748,10 +748,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         final concluido = a['concluido'] == 1;
                         final pago = a['pago'] == 1;
 
-                        final agora = DateTime.now();
-                        final duasHorasDepois = data.add(const Duration(hours: 2));
-                        final deveSerConcluido =
-                            agora.isAfter(duasHorasDepois) && data.isBefore(agora);
+                        final tempoEstimado = a['tempo_estimado_minutos'] as int?;
+                        final deveSerConcluido = Atendimento.deveSerConcluidoEm(data, tempoEstimado);
 
                         final statusConcluido = concluido || deveSerConcluido;
 

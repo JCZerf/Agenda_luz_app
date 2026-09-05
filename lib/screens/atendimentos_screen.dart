@@ -32,8 +32,12 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
     final concluidos = todos.where((a) {
       final concluido = a['concluido'] == 1;
       final dataHora = DateTime.parse(a['data_hora']);
-      final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-      final deveSerConcluido = agora.isAfter(duasHorasDepois) && dataHora.isBefore(agora);
+      final tempoEstimadoMinutos = a['tempo_estimado_minutos'] as int?;
+      final deveSerConcluido = Atendimento.deveSerConcluidoEm(
+        dataHora,
+        tempoEstimadoMinutos,
+        agora: agora,
+      );
 
       return concluido || deveSerConcluido;
     }).toList();
@@ -503,9 +507,11 @@ class _AtendimentosScreenState extends State<AtendimentosScreen> {
                           final valor = (a['valor'] as num).toDouble();
                           final concluido = a['concluido'] == 1;
 
-                          final agora = DateTime.now();
-                          final duasHorasDepois = dataHora.add(const Duration(hours: 2));
-                          final deveSerConcluido = agora.isAfter(duasHorasDepois);
+                          final tempoEstimadoMinutos = a['tempo_estimado_minutos'] as int?;
+                          final deveSerConcluido = Atendimento.deveSerConcluidoEm(
+                            dataHora,
+                            tempoEstimadoMinutos,
+                          );
                           final autoConcluido = !concluido && deveSerConcluido;
 
                           return GestureDetector(

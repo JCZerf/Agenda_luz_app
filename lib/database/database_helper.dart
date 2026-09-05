@@ -27,20 +27,35 @@ class DatabaseHelper {
 
   Future<void> marcarAtendimentosConcluidosAutomaticamente() async {
     final dbClient = await db;
-    final duasHorasAtras = DateTime.now().subtract(const Duration(hours: 2)).toIso8601String();
-
-    await dbClient.update(
+    final candidatos = await dbClient.query(
       'atendimentos',
-      {'concluido': 1},
-      where: 'data_hora < ? AND concluido = 0 AND reaberto_manual = 0',
-      whereArgs: [duasHorasAtras],
+      where: 'concluido = 0 AND reaberto_manual = 0',
     );
-  }
 
-  bool deveSerConcluido(DateTime dataHoraAtendimento) {
     final agora = DateTime.now();
-    final duasHorasDepois = dataHoraAtendimento.add(const Duration(hours: 2));
-    return agora.isAfter(duasHorasDepois);
+
+    for (final row in candidatos) {
+      final atendimento = Atendimento.fromMap(row);
+      if (!Atendimento.deveSerConcluidoEm(
+        atendimento.dataHora,
+        atendimento.tempoEstimadoMinutos,
+        agora: agora,
+      )) {
+        continue;
+      }
+
+      await dbClient.update(
+        'atendimentos',
+        {'concluido': 1, 'pago': 1},
+        where: 'id = ?',
+        whereArgs: [atendimento.id],
+      );
+
+      final jaExiste = await movimentacaoExisteParaAtendimento(atendimento.id!);
+      if (!jaExiste) {
+        await inserirMovimentacaoAutomatica(atendimento.copyWith(pago: true));
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
