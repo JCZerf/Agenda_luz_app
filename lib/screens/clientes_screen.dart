@@ -107,14 +107,47 @@ class _ClientesScreenState extends State<ClientesScreen> {
     return telefone;
   }
 
-  Future<void> _abrirWhatsApp(String telefone) async {
-    final numeroLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
-    
+  String _formatarTempoDecorrido(DateTime data) {
+    final dias = DateTime.now().difference(data).inDays;
+    if (dias <= 0) return 'hoje';
+    if (dias == 1) return '1 dia';
+    if (dias < 30) return '$dias dias';
+    if (dias < 365) {
+      final meses = (dias / 30).round();
+      return '$meses ${meses == 1 ? 'mês' : 'meses'}';
+    }
+    final anos = (dias / 365).round();
+    return '$anos ${anos == 1 ? 'ano' : 'anos'}';
+  }
+
+  Future<void> _enviarLembreteAgendamento(Cliente cliente) async {
+    final ultimoAtendimento = await DatabaseHelper().buscarUltimoAtendimentoConcluido(cliente.id!);
+
+    if (!mounted) return;
+
+    final numeroLimpo = cliente.telefone.replaceAll(RegExp(r'[^0-9]'), '');
     final numeroCompleto = numeroLimpo.startsWith('55') ? numeroLimpo : '55$numeroLimpo';
-    
-    final mensagem = Uri.encodeComponent('Olá! Gostaria de agendar um horário.');
-    final url = Uri.parse('https://wa.me/$numeroCompleto?text=$mensagem');
-    
+
+    final mensagem = StringBuffer('Olá! Tudo bem? ✨\n\n')
+      ..write(
+        'Passando para saber se já gostaria de deixar seu próximo horário '
+        'para o design de sobrancelhas agendado.\n\n',
+      );
+
+    if (ultimoAtendimento != null) {
+      mensagem.write(
+        'Já faz ${_formatarTempoDecorrido(ultimoAtendimento)} desde o seu último atendimento! ',
+      );
+    }
+
+    mensagem.write(
+      'Estou organizando minha agenda dos próximos dias e gostaria de saber '
+      'se posso reservar um horário para você. 🤍\n\n'
+      'Caso tenha interesse, me informe o melhor dia e período para verificarmos a disponibilidade.',
+    );
+
+    final url = Uri.parse('https://wa.me/$numeroCompleto?text=${Uri.encodeComponent(mensagem.toString())}');
+
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -141,11 +174,11 @@ class _ClientesScreenState extends State<ClientesScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: const Icon(Icons.chat, color: Colors.green),
-            title: const Text('WhatsApp'),
+            leading: const Icon(Icons.notifications_active, color: Colors.green),
+            title: const Text('Lembrete de Agendamento'),
             onTap: () {
               Navigator.pop(context);
-              _abrirWhatsApp(cliente.telefone);
+              _enviarLembreteAgendamento(cliente);
             },
           ),
           ListTile(
@@ -284,7 +317,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                       Icons.phone,
                       'Telefone',
                       _formatarTelefone(cliente.telefone),
-                      onTap: () => _abrirWhatsApp(cliente.telefone),
+                      onTap: () => _enviarLembreteAgendamento(cliente),
                     ),
                     const SizedBox(height: 12),
                     
@@ -326,8 +359,8 @@ class _ClientesScreenState extends State<ClientesScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              icon: const Icon(Icons.chat),
-                              label: const Text('Enviar WhatsApp'),
+                              icon: const Icon(Icons.notifications_active),
+                              label: const Text('Enviar Lembrete'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF25D366),
                                 foregroundColor: Colors.white,
@@ -338,7 +371,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                               ),
                               onPressed: () {
                                 Navigator.pop(context);
-                                _abrirWhatsApp(cliente.telefone);
+                                _enviarLembreteAgendamento(cliente);
                               },
                             ),
                           ),
