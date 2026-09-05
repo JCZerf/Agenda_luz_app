@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -13,48 +14,51 @@ class BackupService {
 
   final DatabaseHelper _databaseHelper = DatabaseHelper();
 
-  // Fazer backup automatico
   Future<bool> fazerBackupAutomatico() async {
     try {
       final dadosBackup = await _coletarDadosCompletos();
       final arquivo = await _salvarBackupLocal(dadosBackup, 'backup_automatico');
       return arquivo != null;
     } catch (e) {
-      debugPrint('Erro no backup automatico: $e');
       return false;
     }
   }
 
-  // Fazer backup manual e compartilhar
   Future<bool> fazerBackupManual(BuildContext context) async {
     try {
       final dadosBackup = await _coletarDadosCompletos();
       File? arquivo = await _salvarBackupLocal(dadosBackup, 'backup_manual');
-      
+
+      if (!context.mounted) return arquivo != null;
       if (arquivo == null) {
         _mostrarMensagem(context, 'Erro: não foi possível criar o arquivo de backup');
         return false;
       }
-      
+
       try {
         await Share.shareXFiles(
-          [XFile(arquivo.path)], 
+          [XFile(arquivo.path)],
           text: 'Backup AgendaLuz - ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}'
         );
-        
-        _mostrarMensagem(context, 'Backup criado e compartilhado!');
+
+        if (context.mounted) {
+          _mostrarMensagem(context, 'Backup criado e compartilhado!');
+        }
         return true;
       } catch (shareError) {
-        _mostrarMensagem(context, 'Backup criado em: ${arquivo.path}\nMas não foi possível compartilhar');
+        if (context.mounted) {
+          _mostrarMensagem(context, 'Backup criado em: ${arquivo.path}\nMas não foi possível compartilhar');
+        }
         return true;
       }
     } catch (e) {
-      _mostrarMensagem(context, 'Erro ao criar backup: $e');
+      if (context.mounted) {
+        _mostrarMensagem(context, 'Erro ao criar backup: $e');
+      }
       return false;
     }
   }
 
-  // Coletar todos os dados do banco
   Future<Map<String, dynamic>> _coletarDadosCompletos() async {
     final db = await _databaseHelper.db;
     
@@ -76,7 +80,6 @@ class BackupService {
     };
   }
 
-  // Salvar backup localmente com estratégia de fallback
   Future<File?> _salvarBackupLocal(Map<String, dynamic> dados, String tipo) async {
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final nomeArquivo = 'agendaluz_${tipo}_$timestamp.json';
@@ -85,7 +88,6 @@ class BackupService {
     try {
       jsonString = jsonEncode(dados);
     } catch (e) {
-      debugPrint('Erro ao converter dados para JSON: $e');
       return null;
     }
     
@@ -98,7 +100,7 @@ class BackupService {
         return arquivo;
       }
     } catch (e) {
-      debugPrint('Falha ao salvar em documentos: $e');
+      // tenta o fallback abaixo
     }
     
     try {
@@ -110,13 +112,12 @@ class BackupService {
         return arquivo;
       }
     } catch (e) {
-      debugPrint('Falha ao salvar em temp: $e');
+      // sem diretório gravável disponível
     }
     
     return null;
   }
 
-  // Listar backups salvos localmente
   Future<List<Map<String, dynamic>>> listarBackupsLocais() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
@@ -132,7 +133,6 @@ class BackupService {
           final stat = await arquivo.stat();
           final nomeArquivo = arquivo.path.split('/').last;
           
-          // Tentar extrair data do nome do arquivo
           DateTime? dataBackup;
           final regex = RegExp(r'(\d{8}_\d{6})');
           final match = regex.firstMatch(nomeArquivo);
@@ -155,57 +155,84 @@ class BackupService {
             'dataBackup': dataBackup,
           });
         } catch (e) {
-          debugPrint('Erro ao processar arquivo ${arquivo.path}: $e');
+          // ignora arquivo corrompido/ilegível
         }
       }
       
-      // Ordenar por data de modificação (mais recente primeiro)
       backups.sort((a, b) => (b['dataModificacao'] as DateTime).compareTo(a['dataModificacao'] as DateTime));
       
       return backups;
     } catch (e) {
-      debugPrint('Erro ao listar backups: $e');
       return [];
     }
   }
 
-  // Restaurar backup de um arquivo
+  Future<bool> escolherERestaurarBackup(BuildContext context) async {
+    try {
+      final resultado = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (resultado == null || resultado.files.single.path == null) {
+        return false;
+      }
+
+      if (!context.mounted) return false;
+      final caminhoArquivo = resultado.files.single.path!;
+      return restaurarBackup(context, caminhoArquivo);
+    } catch (e) {
+      if (context.mounted) {
+        _mostrarMensagem(context, 'Erro ao selecionar arquivo: $e');
+      }
+      return false;
+    }
+  }
+
   Future<bool> restaurarBackup(BuildContext context, String caminhoArquivo) async {
     try {
       final arquivo = File(caminhoArquivo);
       if (!await arquivo.exists()) {
-        _mostrarMensagem(context, 'Arquivo de backup não encontrado!');
+        if (context.mounted) {
+          _mostrarMensagem(context, 'Arquivo de backup não encontrado!');
+        }
         return false;
       }
-      
+
       final conteudo = await arquivo.readAsString();
       final dadosBackup = jsonDecode(conteudo);
-      
+
       if (!_validarEstruturalBackup(dadosBackup)) {
-        _mostrarMensagem(context, 'Arquivo de backup inválido!');
+        if (context.mounted) {
+          _mostrarMensagem(context, 'Arquivo de backup inválido!');
+        }
         return false;
       }
-      
+
+      if (!context.mounted) return false;
       bool? confirmar = await _confirmarRestauracao(context, dadosBackup);
       if (confirmar != true) {
-        _mostrarMensagem(context, 'Restauração cancelada pelo usuário');
+        if (context.mounted) {
+          _mostrarMensagem(context, 'Restauração cancelada pelo usuário');
+        }
         return false;
       }
-      
+
       await fazerBackupAutomatico();
       await _restaurarDados(dadosBackup['dados']);
-      
-      _mostrarMensagem(context, 'Backup restaurado com sucesso!');
+
+      if (context.mounted) {
+        _mostrarMensagem(context, 'Backup restaurado com sucesso!');
+      }
       return true;
-      
     } catch (e) {
-      debugPrint('Erro na restauracao: $e');
-      _mostrarMensagem(context, 'Erro ao restaurar backup: $e');
+      if (context.mounted) {
+        _mostrarMensagem(context, 'Erro ao restaurar backup: $e');
+      }
       return false;
     }
   }
   
-  // Validar estrutura do backup
   bool _validarEstruturalBackup(Map<String, dynamic> dados) {
     try {
       if (!dados.containsKey('versao_backup') || 
@@ -228,12 +255,10 @@ class BackupService {
       
       return true;
     } catch (e) {
-      debugPrint('Erro na validacao: $e');
       return false;
     }
   }
   
-  // Confirmar restauração com o usuário
   Future<bool?> _confirmarRestauracao(BuildContext context, Map<String, dynamic> dadosBackup) async {
     final dados = dadosBackup['dados'] as Map<String, dynamic>;
     final totalClientes = (dados['clientes'] as List).length;
@@ -244,32 +269,32 @@ class BackupService {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirmar Restauração'),
+          title: const Text('Confirmar Restauração'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('⚠️ ATENÇÃO: Esta ação irá substituir todos os dados atuais!'),
-              SizedBox(height: 16),
-              Text('Dados do backup:'),
+              const Text('⚠️ ATENÇÃO: Esta ação irá substituir todos os dados atuais!'),
+              const SizedBox(height: 16),
+              const Text('Dados do backup:'),
               Text('• Data: ${DateFormat('dd/MM/yyyy HH:mm').format(dataBackup)}'),
               Text('• Clientes: $totalClientes'),
               Text('• Atendimentos: $totalAtendimentos'),
-              SizedBox(height: 16),
-              Text('Um backup dos dados atuais será feito automaticamente antes da restauração.'),
+              const SizedBox(height: 16),
+              const Text('Um backup dos dados atuais será feito automaticamente antes da restauração.'),
             ],
           ),
           actions: [
             TextButton(
-              child: Text('Cancelar'),
+              child: const Text('Cancelar'),
               onPressed: () => Navigator.of(context).pop(false),
             ),
             ElevatedButton(
-              child: Text('Restaurar'),
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
               ),
+              child: const Text('Restaurar'),
             ),
           ],
         );
@@ -277,75 +302,57 @@ class BackupService {
     );
   }
   
-  // Restaurar dados no banco
   Future<void> _restaurarDados(Map<String, dynamic> dados) async {
     final db = await _databaseHelper.db;
-    
+
+    // PRAGMA precisa ser executado fora da transação para ter efeito.
+    await db.execute('PRAGMA foreign_keys = OFF');
+
     try {
-      await db.execute('PRAGMA foreign_keys = OFF');
-      
-      await db.delete('movimentacoes_financeiras');
-      await db.delete('atendimentos');
-      await db.delete('servicos');
-      await db.delete('clientes');
-      
-      if (dados.containsKey('clientes')) {
-        final clientes = dados['clientes'] as List;
-        for (var cliente in clientes) {
-          try {
-            await db.insert('clientes', cliente as Map<String, dynamic>);
-          } catch (e) {
-            debugPrint('Erro ao restaurar cliente: $e');
+      // Envolve tudo em uma transação: se qualquer inserção falhar,
+      // as exclusões e inserções já feitas são revertidas automaticamente,
+      // evitando deixar o banco com dados apagados pela metade.
+      await db.transaction((txn) async {
+        await txn.delete('movimentacoes_financeiras');
+        await txn.delete('atendimentos');
+        await txn.delete('servicos');
+        await txn.delete('clientes');
+
+        if (dados.containsKey('clientes')) {
+          final clientes = dados['clientes'] as List;
+          for (var cliente in clientes) {
+            await txn.insert('clientes', cliente as Map<String, dynamic>);
           }
         }
-      }
-      
-      if (dados.containsKey('servicos')) {
-        final servicos = dados['servicos'] as List;
-        for (var servico in servicos) {
-          try {
-            await db.insert('servicos', servico as Map<String, dynamic>);
-          } catch (e) {
-            debugPrint('Erro ao restaurar servico: $e');
+
+        if (dados.containsKey('servicos')) {
+          final servicos = dados['servicos'] as List;
+          for (var servico in servicos) {
+            await txn.insert('servicos', servico as Map<String, dynamic>);
           }
         }
-      }
-      
-      if (dados.containsKey('atendimentos')) {
-        final atendimentos = dados['atendimentos'] as List;
-        for (var atendimento in atendimentos) {
-          try {
-            await db.insert('atendimentos', atendimento as Map<String, dynamic>);
-          } catch (e) {
-            debugPrint('Erro ao restaurar atendimento: $e');
+
+        if (dados.containsKey('atendimentos')) {
+          final atendimentos = dados['atendimentos'] as List;
+          for (var atendimento in atendimentos) {
+            await txn.insert('atendimentos', atendimento as Map<String, dynamic>);
           }
         }
-      }
-      
-      if (dados.containsKey('movimentacoes_financeiras')) {
-        final movimentacoes = dados['movimentacoes_financeiras'] as List;
-        for (var movimentacao in movimentacoes) {
-          try {
-            await db.insert('movimentacoes_financeiras', movimentacao as Map<String, dynamic>);
-          } catch (e) {
-            debugPrint('Erro ao restaurar movimentacao: $e');
+
+        if (dados.containsKey('movimentacoes_financeiras')) {
+          final movimentacoes = dados['movimentacoes_financeiras'] as List;
+          for (var movimentacao in movimentacoes) {
+            await txn.insert('movimentacoes_financeiras', movimentacao as Map<String, dynamic>);
           }
         }
-      }
-      
-      await db.execute('PRAGMA foreign_keys = ON');
+      });
     } catch (e) {
-      debugPrint('Erro durante restauracao: $e');
-      
-      try {
-        await db.execute('PRAGMA FOREIGN_KEYS = ON');
-      } catch (_) {}
-      
       rethrow;
+    } finally {
+      await db.execute('PRAGMA foreign_keys = ON');
     }
   }
 
-  // Mostrar mensagem
   void _mostrarMensagem(BuildContext context, String mensagem) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensagem)),

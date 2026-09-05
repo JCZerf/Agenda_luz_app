@@ -56,10 +56,10 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.backup, color: AppColors.textoEscuro, size: 24),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Backup dos Dados',
                   style: TextStyle(
@@ -120,7 +120,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
         label: const Text('Restaurar Backup'),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textoEscuro,
-          side: BorderSide(color: AppColors.textoEscuro),
+          side: const BorderSide(color: AppColors.textoEscuro),
           padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -137,10 +137,10 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.notifications, color: AppColors.textoEscuro, size: 24),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Notificacoes',
                   style: TextStyle(
@@ -190,15 +190,15 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+      child: const Padding(
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(Icons.info_outline, color: AppColors.textoEscuro, size: 24),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Sobre o App',
                   style: TextStyle(
@@ -209,7 +209,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text('Versao: 1.4.2+17', style: TextStyle(color: AppColors.textoEscuro)),
             Text('Desenvolvido por: JCZerf', style: TextStyle(color: AppColors.textoEscuro)),
           ],
@@ -232,14 +232,11 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
   }
 
   Future<void> _selecionarArquivoBackup() async {
-    // Listar backups disponíveis
     final backups = await _backupService.listarBackupsLocais();
-    
+
     if (backups.isEmpty) {
-      // Se não há backups locais, mostrar diálogo para inserir caminho
-      _mostrarDialogoSelecaoManual();
+      _restaurarComSeletorDeArquivos();
     } else {
-      // Mostrar lista de backups disponíveis
       _mostrarDialogoSelecaoBackup(backups);
     }
   }
@@ -290,7 +287,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
               TextButton.icon(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  _mostrarDialogoSelecaoManual();
+                  _restaurarComSeletorDeArquivos();
                 },
                 icon: const Icon(Icons.folder_open),
                 label: const Text('Selecionar outro arquivo'),
@@ -321,91 +318,19 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
     }
   }
   
-  Future<void> _mostrarDialogoSelecaoManual() async {
-    final caminhoArquivo = await _mostrarDialogoInsercaoCaminho();
-    
-    if (caminhoArquivo != null && caminhoArquivo.isNotEmpty) {
-      _restaurarBackupSelecionado(caminhoArquivo);
+  Future<void> _restaurarComSeletorDeArquivos() async {
+    setState(() => _carregandoBackup = true);
+
+    try {
+      final sucesso = await _backupService.escolherERestaurarBackup(context);
+      if (sucesso) {
+        _mostrarMensagem('Backup restaurado com sucesso!');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _carregandoBackup = false);
+      }
     }
-  }
-  
-  Future<String?> _mostrarDialogoInsercaoCaminho() async {
-    final TextEditingController controller = TextEditingController();
-    
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Restaurar Backup'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Cole o caminho completo do arquivo de backup:'),
-            const SizedBox(height: 8),
-            const Text(
-              'Exemplo: /storage/emulated/0/Download/agendaluz_backup_20250801_143500.json',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Caminho do arquivo',
-                hintText: '/caminho/para/o/arquivo.json',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '💡 Dica:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Use um gerenciador de arquivos para encontrar o arquivo de backup que você compartilhou anteriormente.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final caminho = controller.text.trim();
-              Navigator.of(context).pop(caminho);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.rosaPrincipal,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Restaurar'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _mostrarMensagem(String mensagem) {
