@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../services/backup_service.dart';
 import '../utils/app_colors.dart';
 import 'notifications_screen.dart';
@@ -14,6 +15,21 @@ class ConfiguracoesScreen extends StatefulWidget {
 class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
   final BackupService _backupService = BackupService();
   bool _carregandoBackup = false;
+  String _versaoApp = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarVersaoApp();
+  }
+
+  Future<void> _carregarVersaoApp() async {
+    final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
+    setState(() {
+      _versaoApp = '${info.version}+${info.buildNumber}';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,12 +206,12 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: const Padding(
-        padding: EdgeInsets.all(16.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.info_outline, color: AppColors.textoEscuro, size: 24),
                 SizedBox(width: 8),
@@ -209,9 +225,9 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 16),
-            Text('Versao: 1.4.2+17', style: TextStyle(color: AppColors.textoEscuro)),
-            Text('Desenvolvido por: JCZerf', style: TextStyle(color: AppColors.textoEscuro)),
+            const SizedBox(height: 16),
+            Text('Versao: $_versaoApp', style: const TextStyle(color: AppColors.textoEscuro)),
+            const Text('Desenvolvido por: JCZerf', style: TextStyle(color: AppColors.textoEscuro)),
           ],
         ),
       ),

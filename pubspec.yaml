@@ -1,7 +1,7 @@
 name: AgendaLuz
 description: "Aplicativo de agendamento e controle financeiro para profissionais autônomos."
 publish_to: 'none'
-version: 1.4.2+17
+version: 1.5.0+18
 
 environment:
   sdk: ^3.8.1

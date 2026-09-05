@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
@@ -61,7 +62,8 @@ class BackupService {
 
   Future<Map<String, dynamic>> _coletarDadosCompletos() async {
     final db = await _databaseHelper.db;
-    
+    final info = await PackageInfo.fromPlatform();
+
     final clientes = await db.query('clientes');
     final atendimentos = await db.query('atendimentos');
     final movimentacoes = await db.query('movimentacoes_financeiras');
@@ -70,7 +72,7 @@ class BackupService {
     return {
       'versao_backup': '2.0',
       'data_backup': DateTime.now().toIso8601String(),
-      'app_version': '1.4.2+17',
+      'app_version': '${info.version}+${info.buildNumber}',
       'dados': {
         'clientes': clientes,
         'atendimentos': atendimentos,
